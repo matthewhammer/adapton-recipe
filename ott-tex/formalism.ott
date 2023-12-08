@@ -12,6 +12,7 @@ grammar
 
 formula :: 'formula_' ::=
  | judgement :: :: judgement
+ | G ( s ) =  n :: :: graphGetNode
 
 v :: 'v_' ::= {{ com Values. }}
  | #elipses :: M :: dots {{ com Most existing (e.g., Motoko) forms. }}
@@ -21,8 +22,8 @@ v :: 'v_' ::= {{ com Values. }}
  | e1 . e2 :: :: symbolDot
  | x :: :: var
  | thunk { e } :: :: thunk
- | addr s :: :: addr
- | name s :: :: name
+ | sym s :: :: symbol
+ | addr s :: :: address
 
 e :: 'e_' ::= {{ com Expressions. }}
  | #elipses :: M :: dots {{ com Existing (e.g., Motoko) forms. }}
@@ -56,9 +57,9 @@ G :: 'graph_' ::= {{ com Graphs. }}
  | G1 , G2 :: :: union {{ com Graph union (disjoint). }}
 
 n :: 'node_' ::= {{ com Nodes. }}
- | ( e , - ) :: :: thunkUneval {{ com Thunk, unevaluated. }}
- | ( e , v ) :: :: thunkEvaled {{ com Thunk, evaluated. }}
- | ( - , v ) :: :: refCell {{ com Reference cell. }}
+ | ( e , - , - ) :: :: thunkUneval {{ com Thunk, unevaluated. }}
+ | ( e , v , t ) :: :: thunkEvaled {{ com Thunk, evaluated. }}
+ | v :: :: refCell {{ com Reference cell. }}
 
 s :: 'sym_' ::= {{ com Atomic symbols. }}
 
@@ -95,6 +96,35 @@ terminals :: 'terminals_' ::=
 defns J :: '' ::=
 
 defn
-G ; e0 |- e !! v ; t ::  :: eval :: 'eval_'
+G |- s clean :: :: clean :: 'clean_'
+{{ com Clean node. }}
+by
+
+
+defn
+G1 ; s ; e0 |- e !! G2 ; v ; t ::  :: eval :: 'eval_'
 {{ com Evaluation. }}
 by
+
+G1 ; s ; e0 |- e1 !! G2 ; sym s ; t1
+G2 ; s ; e0 |- e2 !! G3 ; v ; t2
+----------------------------------------------------- :: put
+G1 ; s ; e0 |- @ e1 := e2 !! G3 ; addr s ; t1 ; t2
+
+G1 ; s ; e0 |- e !! G2 ; thunk { e1 } ; t1
+G2 ; s ; e0 |- e1 !! G3 ; v ; t2
+----------------------------------------------- :: forcePure
+G1 ; s ; e0 |- force e !! G2 ; v ; t1 ; t2
+
+G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
+G2(s1) = (e1, v, t2)
+G2 |- s1 clean
+----------------------------------------------- :: forceClean
+G1 ; s ; e0 |- force e !! G2 ; v ; t1 ; t2
+
+G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
+G1(s1) = (e1, -, -)
+G2 ; s ; e0 |- e1 !! G3 ; v ; t2
+----------------------------------------------- :: forceEval
+G1 ; s ; e0 |- force e !! G3, s : (e1, v, t2) ; v ; t1  ; t2
+

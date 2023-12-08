@@ -26,41 +26,9 @@ By \emph{variables}, we mean lexically-scoped names that obey mathematical expec
 
 Adapton symbols give structure to program-determined pointers in a global memory and cache system.
 
-\paragraph{Meta variables for program variables}
-
-\[ [[ x ]], [[ y ]], [[ z ]]\]
-
-When using lexically-scoped variables that follow the usual principles
-of substitution and alpha conversion, we use italics (as with $x, y,
-z$, above).  Italics distinguish these meta variables from
-\emph{symbols}, that do not follow ordinary lexical scoping or
-substitution rules.
-
-\paragraph{Symbols (are not variables).}
-
-We give some example symbols, but see the Examples Document for a fuller discussion.
-Notice that we use non-italic monospace font:
-
-\[ [[ a ]]\]
-\[ [[ b ]]\]
-\[ [[ xSymbol ]]\]
-\[ [[ a b c ]]\]
-
-Sequences with balanced delimiters (paren, brace, bracket):
-
-\[ [[ ( a b c ) ]]\]
-\[ [[ a ( b { c } a ) ]]\]
-\[ [[ a ( ( b ) ( ) [ c b ] ) ]]\]
-
-With commas and other internal delimiters
-
-\[ [[ a ( b , ,  b  , a ) ]]\]
-\[ [[ a ( c ; { b } ; , a ) ]]\]
-\[ [[ a ( ( , - - c , ) ( ) [ b | a b ( c a ) a ] ) ]]\]
-
-We prefix symbol trees with \textbf{\$} to promote them into constant
-terms.
-
+In choosing the patterns that symbols use in their programs,
+programmers exercise control over incremental reuse when the program
+responds to incremental changes.
 
 \paragraph{Symbols (as trees)}
 
@@ -92,6 +60,14 @@ incremental caching and reuse semantics for their program's behavior.
 
 \end{itemize}
 
+Symbols give an alternative to automatic hash-consing, where the cache
+addresses are determined by content, not by separate program choices.
+
+The symbolic cache actually subsumes hash consing: By choosing the
+symbolic name to coincide with the data itself (or its hash), the
+symbolic store implements hash consing as a mode of use.
+
+
 Unlike lexically-bound variables, symbols play a role in naming
 program effects, and are not meant to be ``meaningless'' or freely
 alpha-converted into other symbols.
@@ -104,9 +80,6 @@ possible, not discarded.
 Instead of alpha conversion, we consider a kind of ``namespace
 substitution'' property that shows how to vary them without affecting
 program semantics (beyond concrete name choices).
-
-
-\[ [[ G' |- p : E' ]] \]
 
 
 \end{document}

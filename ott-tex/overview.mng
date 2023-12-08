@@ -30,7 +30,7 @@ In choosing the patterns that symbols use in their programs,
 programmers exercise control over incremental reuse when the program
 responds to incremental changes.
 
-\paragraph{Symbols (as trees)}
+\paragraph{Symbols as trees.}
 
 In Adapton, symbols serve several interconnected roles:
 
@@ -60,6 +60,9 @@ incremental caching and reuse semantics for their program's behavior.
 
 \end{itemize}
 
+
+\paragraph{Support for hash consing.}
+
 Symbols give an alternative to automatic hash-consing, where the cache
 addresses are determined by content, not by separate program choices.
 
@@ -68,18 +71,20 @@ symbolic name to coincide with the data itself (or its hash), the
 symbolic store implements hash consing as a mode of use.
 
 
+\paragraph{Symbol substitution (lack of $\alpha$-equivalence).}
+
+The structural relationships of symbols in a program reflect a
+deliberate design with important determinative qualities for cache
+performance.
+
 Unlike lexically-bound variables, symbols play a role in naming
 program effects, and are not meant to be ``meaningless'' or freely
 alpha-converted into other symbols.
 
-Because name relationships reflect a deliberate design with important
-determinative qualities for cache performance, they should be carried
-through the programming language system, to the extent this is
-possible, not discarded.
-
 Instead of alpha conversion, we consider a kind of ``namespace
 substitution'' property that shows how to vary them without affecting
-program semantics (beyond concrete name choices).
+the incremental semantics (the cache's patterns of reuse, based on
+symbolic choices).
 
 
 \end{document}

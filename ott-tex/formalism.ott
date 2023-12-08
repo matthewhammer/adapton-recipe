@@ -11,17 +11,20 @@ metavar x , y , z ::=
 grammar
 
 formula :: 'formula_' ::=
-| judgement :: :: judgement
-
+ | judgement :: :: judgement
 
 v :: 'v_' ::= {{ com Values. }}
- | #elipses :: M :: dots {{ com Existing (e.g., Motoko) forms. }}
+ | #elipses :: M :: dots {{ com Most existing (e.g., Motoko) forms. }}
+ | \ x . e :: :: lambda
+ | e1 ( e2 ) :: :: apply
+ | e1 - e2 :: :: symbolDash
+ | e1 . e2 :: :: symbolDot
  | x :: :: var
  | thunk { e } :: :: thunk
  | addr s :: :: addr
  | name s :: :: name
 
- e :: 'e_' ::= {{ com Minimal expressions. }}
+e :: 'e_' ::= {{ com Expressions. }}
  | #elipses :: M :: dots {{ com Existing (e.g., Motoko) forms. }}
  | e1 := e2 :: :: put
  | @ e1 :: :: get
@@ -31,7 +34,7 @@ v :: 'v_' ::= {{ com Values. }}
  | do @ e1 with e2 { e3 } :: :: doAt
  | [ v / x ] e :: M :: subst
 
-t :: 'trace_' ::= {{ com Trace. }}
+t :: 'trace_' ::= {{ com Traces. }}
  | return v :: :: value {{ com Return value $[[v]]$. }}
  | t1 ; t2 :: :: seq {{ com Sequence subtraces $[[t1]]$ and $[[t2]]$. }}
  | #empty :: :: empty {{ com Identity trace for sequencing via \texttt{;}. }}
@@ -39,10 +42,23 @@ t :: 'trace_' ::= {{ com Trace. }}
  | @ s = v :: :: get {{ com Get from $[[s]]$ equals value $[[v]]$. }}
  | h { t } :: S :: nest {{ com Nested subtrace, with head $[[h]]$. }}
 
-h :: 'head_' ::= {{ com Trace head. }}
-| do @ s with e :: :: doAtWith
-| do @ s :: :: doAt
-| with e :: :: with
+h :: 'head_' ::= {{ com Trace heads. }}
+ | do @ s with e :: :: doAtWith
+ | do @ s :: :: doAt
+ | with e :: :: with
+
+G :: 'graph_' ::= {{ com Graphs. }}
+ | #empty :: :: empty {{ com Empty graph. }}
+ | s : n :: :: node {{ com Graph node. }}
+ | force s1 v s2  :: :: force {{ com Force edge. }} {{ tex [[s1]] \rightarrow^\texttt{force}_[[v]] [[s2]] }}
+ | get s1 v s2 :: :: get {{ com Get edge. }} {{ tex [[s1]] \rightarrow^\texttt{get}_[[v]] [[s2]] }}
+ | put s1 v s2 :: :: put {{ com Put edge. }} {{ tex [[s1]] \rightarrow^\texttt{put}_[[v]] [[s2]] }}
+ | G1 , G2 :: :: union {{ com Graph union (disjoint). }}
+
+n :: 'node_' ::= {{ com Nodes. }}
+ | ( e , - ) :: :: thunkUneval {{ com Thunk, unevaluated. }}
+ | ( e , v ) :: :: thunkEvaled {{ com Thunk, evaluated. }}
+ | ( - , v ) :: :: refCell {{ com Reference cell. }}
 
 s :: 'sym_' ::= {{ com Atomic symbols. }}
 
@@ -70,9 +86,15 @@ terminals :: 'terminals_' ::=
 | ;; :: :: dsemi {{ tex {~|~} }}
 | ~> :: :: leadsto {{ tex \leadsto }}
 | --> :: :: lra {{ tex \longrightarrow }}
+| !! :: :: downarrow {{ tex \Downarrow }}
 | #elipses :: :: eplises {{ tex \cdots }}
 | #empty :: :: empty {{ tex \epsilon }}
 
 
 
 defns J :: '' ::=
+
+defn
+G ; e0 |- e !! v ; t ::  :: eval :: 'eval_'
+{{ com Evaluation. }}
+by

@@ -3,6 +3,7 @@ embed {{ tex-preamble
 \usepackage{euler}
 \usepackage{inconsolata}
 \usepackage{mathabx} % for otriangleup
+\usepackage{xcolor}
 }}
 
 metavar x , y , z ::=
@@ -13,6 +14,8 @@ grammar
 formula :: 'formula_' ::=
  | judgement :: :: judgement
  | G ( s ) =  n :: :: graphGetNode
+ | v1 = v2 :: :: equal
+ | v1 /= v2 :: :: notEqual
 
 v :: 'v_' ::= {{ com Values. }}
  | \ x . e :: :: lambda {{ com Lambda. }}
@@ -42,9 +45,9 @@ h :: 'head_' ::= {{ com Nested expression heads. }}
 
 t :: 'trace_' ::= {{ com Traces. }}
  | v :: :: value {{ com Final value $[[v]]$. }}
- | t1 ; t2 :: :: seq {{ com Sequence subtraces $[[t1]]$ and $[[t2]]$. }}
+ | t1 , t2 :: :: seq {{ com Sequence subtraces $[[t1]]$ and $[[t2]]$. }}
  | #empty :: :: empty {{ com Identity trace for sequencing via \texttt{;}. }}
- | s := v :: :: put {{ com Put into $[[s]]$ value $[[v]]$. }}
+ | @ s := v :: :: put {{ com Put into $[[s]]$ value $[[v]]$. }}
  | @ s = v :: :: get {{ com Get from $[[s]]$ equals value $[[v]]$. }}
  | H { t } :: :: nest {{ com Nested subtrace, with head $[[H]]$. }}
 
@@ -73,11 +76,14 @@ b :: 'dirtyBit_' ::= {{ com Dirty bit. }}
  | dirty :: :: dirty {{ com Dirty. }}
 
 n :: 'node_' ::= {{ com Nodes. }}
- | ( e , - , - ) :: :: thunkUneval {{ com Thunk, unevaluated. }}
- | ( e , v , t ) :: :: thunkEvaled {{ com Thunk, evaluated. }}
+ | ( e0 , e , - , - ) :: :: thunkUneval {{ com Thunk, unevaluated. }} {{ tex ([[e0]], [[e]], \boxed{\tiny?}, \boxed{\tiny?}) }}
+ | ( e0 , e , v , t ) :: :: thunkEvaled {{ com Thunk, evaluated. }}
  | v :: :: refCell {{ com Reference cell. }}
 
 s :: 'sym_' ::= {{ com Atomic symbols. }}
+ | s1 - s2 :: :: minus {{ com Dash binary connective. }} {{ tex [[s1]]\texttt{-}[[s2]] }}
+ | s1 . s2 :: :: dot {{ com Dot binary connective. }} {{ tex [[s1]]\texttt{.}[[s2]] }}
+ | #elipses ::  :: dots {{ com Any identifier or number literal as a symbol. }}
 
 
 terminals :: 'terminals_' ::=
@@ -113,7 +119,12 @@ defns J :: '' ::=
 
 defn
 G |- s clean :: :: clean :: 'clean_'
-{{ com Clean node. }}
+{{ com Node $[[s]]$ is clean in graph $[[G]]$. }}
+by
+
+defn
+G |- s dirty :: :: dirty :: dirty_'
+{{ com Node $[[s]]$ is dirty in graph $[[G]]$. }}
 by
 
 defn
@@ -127,42 +138,74 @@ G1 ; s ; e0 |- e !! G2 ; v ; t ::  :: eval :: 'eval_'
 {{ com Evaluation. }}
 by
 
+------------------------------- :: val
+G ; s ; e0 |- v !! G ; v ; v
 
-% let
+G1 ; s ; e0 |- e1 !! G2; v1; t1
+G2 ; s ; e0 |- [v/x]e2 !! G3; v2; t2
+----------------------------------------------------- :: let
+G1 ; s ; e0 |- let x = e1 in e2 !! G3; v2; t1,t2
 
-% application
+G1 ; s ; e0 |- e1 !! G2; \x.e3; t1
+G2 ; s ; e0 |- e2 !! G3; v2; t2
+G3 ; s ; e0 |- [v2/x]e3 !! G4; v3; t3
+--------------------------------------------- :: app
+G1 ; s ; e0 |- e1 (e2) !! G4; v3; t1,t2,t3
 
-% minus
+G1 ; s ; e0 |- e1 !! G2; sym s1; t1
+G2 ; s ; e0 |- e2 !! G3; sym s2; t2
+------------------------------------------------ :: minus
+G1 ; s ; e0 |- e1 - e2 !! G3; sym s1-s2; t1,t2
 
-% dot
+G1 ; s ; e0 |- e1 !! G2; sym s1; t1
+G2 ; s ; e0 |- e2 !! G3; sym s2; t2
+------------------------------------------------ :: dot
+G1 ; s ; e0 |- e1 . e2 !! G3; sym s1 . s2; t1,t2
 
 G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
 e0 ( sym s1 ) !! sym s2
 G2 ; s ; e0 |- e2 !! G3 ; v ; t2
+v /= thunk { e3 }
 % dirtyDepsOf(s)
--------------------------------------------------------------- :: put
-G1 ; s ; e0 |- @ e1 := e2 !! G3, s put v clean s2 ; addr s2 ; t1 ; t2
+---------------------------------------------------------------------------------------- :: putRef
+G1 ; s ; e0 |- @ e1 := e2 !! G3, s2: v, s put v clean s2 ; addr s2 ; t1,t2, @s2 := v
 
-% get
+G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
+e0 ( sym s1 ) !! sym s2
+G2 ; s ; e0 |- e2 !! G3 ; v ; t2
+v = thunk { e3 }
+% dirtyDepsOf(s)
+---------------------------------------------------------------------------------------------- :: putThunk
+G1 ; s ; e0 |- @ e1 := e2 !! G3, s2: (e0, e3, -, -), s put v clean s2 ; addr s2 ; t1,t2, @s2 := v
+
+G1 ; s ; e0 |- e1 !! G2; sym s1 ; t1
+G2(s1) = v
+------------------------------------------------------------ :: get
+G1 ; s ; e0 |- @ e1 !! G2, s get v clean s1; v; t1, @s = v
 
 G1 ; s ; e0 |- e !! G2 ; thunk { e1 } ; t1
 G2 ; s ; e0 |- e1 !! G3 ; v ; t2
 ----------------------------------------------- :: forcePure
-G1 ; s ; e0 |- force e !! G2 ; v ; t1 ; t2
+G1 ; s ; e0 |- force e !! G2 ; v ; t1,t2
 
 G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
-G1(s1) = (e1, -, -)
-G2 ; s ; e0 |- e1 !! G3 ; v ; t2
----------------------------------------------------------------------------- :: forceEval
-G1 ; s ; e0 |- force e !! G3, s1 : (e1, v, t2), s force v clean s1 ; v ; t1  ; t2
+G1(s1) = (e0', e1, -, -)
+G2 ; s ; e0' |- e1 !! G3 ; v ; t2
+------------------------------------------------------------------------------------------------ :: forceEval
+G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v, t2), s force v clean s1 ; v ; t1, do @s1{ t2 }
 
 G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
-G2(s1) = (e1, v, t2)
+G2(s1) = (e0', e1, v, t2)
 G2 |- s1 clean
-------------------------------------------------------- :: forceClean
-G1 ; s ; e0 |- force e !! G2, s force v clean s1 ; v ; t1 ; t2
+---------------------------------------------------------------------------- :: forceClean
+G1 ; s ; e0 |- force e !! G2, s force v clean s1 ; v ; t1, do @s1 { t2 }
 
-% forceDirty
+G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
+G2(s1) = (e0', e1, v, t2)
+G2 |- s1 dirty
+G2 ; s ; e0' |- e1 !! G3 ; v' ; t2'
+--------------------------------------------------------------------------------------------------- :: forceDirty
+G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v', t2'), s force v' clean s1 ; v' ; t1, do @s1 { t2' }
 
 % doWith
 

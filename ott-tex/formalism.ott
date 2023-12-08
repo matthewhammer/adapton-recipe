@@ -17,7 +17,6 @@ formula :: 'formula_' ::=
 v :: 'v_' ::= {{ com Values. }}
  | #elipses :: M :: dots {{ com Most existing (e.g., Motoko) forms. }}
  | \ x . e :: :: lambda
- | e1 ( e2 ) :: :: apply
  | e1 - e2 :: :: symbolDash
  | e1 . e2 :: :: symbolDot
  | x :: :: var
@@ -27,6 +26,7 @@ v :: 'v_' ::= {{ com Values. }}
 
 e :: 'e_' ::= {{ com Expressions. }}
  | #elipses :: M :: dots {{ com Existing (e.g., Motoko) forms. }}
+ | e1 ( e2 ) :: :: apply
  | e1 := e2 :: :: put
  | @ e1 :: :: get
  | force e :: :: force
@@ -34,6 +34,7 @@ e :: 'e_' ::= {{ com Expressions. }}
  | let x = e1 in e2 :: :: let
  | do @ e1 with e2 { e3 } :: :: doAt
  | [ v / x ] e :: M :: subst
+ | v :: M :: value
 
 t :: 'trace_' ::= {{ com Traces. }}
  | return v :: :: value {{ com Return value $[[v]]$. }}
@@ -100,16 +101,22 @@ G |- s clean :: :: clean :: 'clean_'
 {{ com Clean node. }}
 by
 
+defn
+e !! v :: :: pureEval :: 'pureEval_'
+{{ com Pure evaluation. }}
+by
+
 
 defn
 G1 ; s ; e0 |- e !! G2 ; v ; t ::  :: eval :: 'eval_'
 {{ com Evaluation. }}
 by
 
-G1 ; s ; e0 |- e1 !! G2 ; sym s ; t1
+G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
+e0 ( sym s1 ) !! sym s2
 G2 ; s ; e0 |- e2 !! G3 ; v ; t2
 ----------------------------------------------------- :: put
-G1 ; s ; e0 |- @ e1 := e2 !! G3 ; addr s ; t1 ; t2
+G1 ; s ; e0 |- @ e1 := e2 !! G3 ; addr s2 ; t1 ; t2
 
 G1 ; s ; e0 |- e !! G2 ; thunk { e1 } ; t1
 G2 ; s ; e0 |- e1 !! G3 ; v ; t2

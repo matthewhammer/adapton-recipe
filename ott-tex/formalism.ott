@@ -127,11 +127,23 @@ G1 ; s ; e0 |- e !! G2 ; v ; t ::  :: eval :: 'eval_'
 {{ com Evaluation. }}
 by
 
+
+% let
+
+% application
+
+% minus
+
+% dot
+
 G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
 e0 ( sym s1 ) !! sym s2
 G2 ; s ; e0 |- e2 !! G3 ; v ; t2
+% dirtyDepsOf(s)
 -------------------------------------------------------------- :: put
 G1 ; s ; e0 |- @ e1 := e2 !! G3, s put v clean s2 ; addr s2 ; t1 ; t2
+
+% get
 
 G1 ; s ; e0 |- e !! G2 ; thunk { e1 } ; t1
 G2 ; s ; e0 |- e1 !! G3 ; v ; t2
@@ -139,14 +151,21 @@ G2 ; s ; e0 |- e1 !! G3 ; v ; t2
 G1 ; s ; e0 |- force e !! G2 ; v ; t1 ; t2
 
 G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
-G2(s1) = (e1, v, t2)
-G2 |- s1 clean
-------------------------------------------------------- :: forceClean
-G1 ; s ; e0 |- force e !! G2, s force v clean s1 ; v ; t1 ; t2
-
-G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
 G1(s1) = (e1, -, -)
 G2 ; s ; e0 |- e1 !! G3 ; v ; t2
 ---------------------------------------------------------------------------- :: forceEval
 G1 ; s ; e0 |- force e !! G3, s1 : (e1, v, t2), s force v clean s1 ; v ; t1  ; t2
 
+G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
+G2(s1) = (e1, v, t2)
+G2 |- s1 clean
+------------------------------------------------------- :: forceClean
+G1 ; s ; e0 |- force e !! G2, s force v clean s1 ; v ; t1 ; t2
+
+% forceDirty
+
+% doWith
+
+% doAt
+
+% doAtWith

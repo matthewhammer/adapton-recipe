@@ -53,6 +53,7 @@ t :: 'trace_' ::= {{ com Traces. }}
  | H { t } :: :: nest {{ com Nested subtrace, with head $[[H]]$. }}
 
 H :: 'traceHead_' ::= {{ com Nested trace heads. }}
+ | force s :: :: force
  | do @ s with e :: :: doAtWith
  | do @ s :: :: doAt
  | with e :: :: with
@@ -79,9 +80,10 @@ b :: 'dirtyBit_' ::= {{ com Dirty bit. }}
 n :: 'node_' ::= {{ com Nodes. }}
  | ( e0 , e , - , - ) :: :: thunkUneval {{ com Thunk, unevaluated. }} {{ tex ([[e0]], [[e]], \boxed{\tiny?}, \boxed{\tiny?}) }}
  | ( e0 , e , v , t ) :: :: thunkEvaled {{ com Thunk, evaluated. }}
+ | ( e0 , e , _ , _ ) :: M :: thunkPattern
  | v :: :: refCell {{ com Reference cell. }}
 
-s :: 'sym_' ::= {{ com Atomic symbols. }}
+s :: 'sym_' ::= {{ com Symbols. }}
  | s1 - s2 :: :: minus {{ com Dash binary connective. }} {{ tex [[s1]]\texttt{-}[[s2]] }}
  | s1 . s2 :: :: dot {{ com Dot binary connective. }} {{ tex [[s1]]\texttt{.}[[s2]] }}
  | #elipses ::  :: dots {{ com Any identifier or number literal as a symbol. }}
@@ -89,6 +91,7 @@ s :: 'sym_' ::= {{ com Atomic symbols. }}
 
 terminals :: 'terminals_' ::=
 | == :: :: equiv {{ tex \equiv }}
+| /= :: :: noteq {{ tex  \neq }}
 | forall :: :: forall {{ tex \forall }}
 | exists :: :: exists {{ tex \exists }}
 | %% :: :: apart {{ tex \otriangleup }}
@@ -119,7 +122,7 @@ terminals :: 'terminals_' ::=
 defns J :: '' ::=
 
 defn
-G |- s clean :: :: clean :: 'clean_'
+G |- s isClean :: :: clean :: 'clean_'
 {{ com Node $[[s]]$ is clean in graph $[[G]]$. }}
 by
 
@@ -137,6 +140,7 @@ by
 defn
 G1 ; s ; e0 |- e !! G2 ; v ; t ::  :: eval :: 'eval_'
 {{ com Evaluation. }}
+{{ tex [[G1]] \vdash^{[[s]]}_{[[e0]]} [[e]] \Downarrow [[G2]] ; [[v]] ; [[t]] }}
 by
 
 ------------------------------- :: val
@@ -181,8 +185,13 @@ G1 ; s ; e0 |- @ e1 := e2 !! G3, s2: (e0, e3, -, -), s put v clean s2 ; addr s2 
 
 G1 ; s ; e0 |- e1 !! G2; sym s1 ; t1
 G2(s1) = v
------------------------------------------------------------- :: get
+------------------------------------------------------------ :: getRef
 G1 ; s ; e0 |- @ e1 !! G2, s get v clean s1; v; t1, @s = v
+
+G1 ; s ; e0 |- e1 !! G2; sym s1 ; t1
+G2(s1) = (e0', e2, _, _)
+-------------------------------------------------------------------------------------- :: getThunk
+G1 ; s ; e0 |- @ e1 !! G2, s get thunk {e2} clean s1; thunk {e2}; t1, @s = thunk {e2}
 
 G1 ; s ; e0 |- e !! G2 ; thunk { e1 } ; t1
 G2 ; s ; e0 |- e1 !! G3 ; v ; t2
@@ -190,36 +199,37 @@ G2 ; s ; e0 |- e1 !! G3 ; v ; t2
 G1 ; s ; e0 |- force e !! G2 ; v ; t1,t2
 
 G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
+G2(s1) = (e0', e1, v, t2)
+G2 |- s1 isClean
+---------------------------------------------------------------------------- :: forceClean
+G1 ; s ; e0 |- force e !! G2, s force v clean s1 ; v ; t1, force s1 { t2 }
+
+G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
 G1(s1) = (e0', e1, -, -)
 G2 ; s1 ; e0' |- e1 !! G3 ; v ; t2
 ------------------------------------------------------------------------------------------------ :: forceEval
-G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v, t2), s force v clean s1 ; v ; t1, do @s1{ t2 }
-
-G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
-G2(s1) = (e0', e1, v, t2)
-G2 |- s1 clean
----------------------------------------------------------------------------- :: forceClean
-G1 ; s ; e0 |- force e !! G2, s force v clean s1 ; v ; t1, do @s1 { t2 }
+G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v, t2), s force v clean s1 ; v ; t1, force s1{ t2 }
 
 G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
 G2(s1) = (e0', e1, v, t2)
 G2 |- s1 dirty
 G2 ; s1 ; e0' |- e1 !! G3 ; v' ; t2'
---------------------------------------------------------------------------------------------------- :: forceDirty
-G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v', t2'), s force v' clean s1 ; v' ; t1, do @s1 { t2' }
+------------------------------------------------------------------------------------------------------- :: forceDirty
+G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v', t2'), s force v' clean s1 ; v' ; t1, force s1 { t2' }
 
 G1 ; s ; \x.e0(e0'(x)) |- e1 !! G2 ; v ; t1 
 -------------------------------------------------------------- :: with
 G1 ; s ; e0 |- with e0' { e1 } !! G2 ; v ; with e0' { t1 }
 
 G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
-G2, s2:(e0, e2, -, -); s ;  e0 |- force (addr s2) !! G3 ; v ; t2
--------------------------------------------------------------------------- :: doAt
-G1 ; s ; e0 |- do @ e1 with e0' { e2 } !! G3; v; t1,t2
+e0 ( sym s1 ) !! sym s2
+G2, s2:(e0, e2, -, -); s ;  e0 |- force (addr s2) !! G3 ; v ; force s2 { t2 }
+----------------------------------------------------------------------------- :: doAt
+G1 ; s ; e0 |- do @ e1 { e2 } !! G3; v; t1, do @s2 { t2 }
 
 
 G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
 e0(sym s1) !! sym s2
-G2, s2:(\x.e0(e0'(x)), e2, -, -); s ;  e0 |- force (addr s2) !! G3 ; v ; t2
--------------------------------------------------------------------------- :: doAtWith
-G1 ; s ; e0 |- do @ e1 with e0' { e2 } !! G3; v; t1,t2
+G2, s2:(\x.e0(e0'(x)), e2, -, -); s ;  e0 |- force (addr s2) !! G3 ; v ; force s2 { t2 }
+---------------------------------------------------------------------------------------- :: doAtWith
+G1 ; s ; e0 |- do @ e1 with e0' { e2 } !! G3; v; t1, do @s2 with e0' { t2 }

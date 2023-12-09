@@ -7,8 +7,8 @@ ott \
     -show_sort true \
     -show_defns true \
     -tex_wrap true \
-    -tex_show_meta true \
-    -tex_show_categories true \
+    -tex_show_meta false \
+    -tex_show_categories false \
     -i formalism.ott \
     -o formalism.tex \
 

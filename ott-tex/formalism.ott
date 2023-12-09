@@ -37,6 +37,7 @@ e :: 'e_' ::= {{ com Expressions. }}
  | @ e1 :: :: get {{ com Get value at symbol. }}
  | force e :: :: force {{ com Force a thunk, or thunk address. }}
  | h { e3 } :: :: nest {{ com Nested subcomputation. }}
+ | ( e ) :: M :: paren {{ com Paren. }}
 
 h :: 'head_' ::= {{ com Nested expression heads. }}
  | do @ e1 with e2 :: :: doAtWith
@@ -175,7 +176,7 @@ e0 ( sym s1 ) !! sym s2
 G2 ; s ; e0 |- e2 !! G3 ; v ; t2
 v = thunk { e3 }
 % dirtyDepsOf(s)
----------------------------------------------------------------------------------------------- :: putThunk
+--------------------------------------------------------------------------------------------------- :: putThunk
 G1 ; s ; e0 |- @ e1 := e2 !! G3, s2: (e0, e3, -, -), s put v clean s2 ; addr s2 ; t1,t2, @s2 := v
 
 G1 ; s ; e0 |- e1 !! G2; sym s1 ; t1
@@ -190,7 +191,7 @@ G1 ; s ; e0 |- force e !! G2 ; v ; t1,t2
 
 G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
 G1(s1) = (e0', e1, -, -)
-G2 ; s ; e0' |- e1 !! G3 ; v ; t2
+G2 ; s1 ; e0' |- e1 !! G3 ; v ; t2
 ------------------------------------------------------------------------------------------------ :: forceEval
 G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v, t2), s force v clean s1 ; v ; t1, do @s1{ t2 }
 
@@ -203,12 +204,22 @@ G1 ; s ; e0 |- force e !! G2, s force v clean s1 ; v ; t1, do @s1 { t2 }
 G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
 G2(s1) = (e0', e1, v, t2)
 G2 |- s1 dirty
-G2 ; s ; e0' |- e1 !! G3 ; v' ; t2'
+G2 ; s1 ; e0' |- e1 !! G3 ; v' ; t2'
 --------------------------------------------------------------------------------------------------- :: forceDirty
 G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v', t2'), s force v' clean s1 ; v' ; t1, do @s1 { t2' }
 
-% doWith
+G1 ; s ; \x.e0(e0'(x)) |- e1 !! G2 ; v ; t1 
+-------------------------------------------------------------- :: with
+G1 ; s ; e0 |- with e0' { e1 } !! G2 ; v ; with e0' { t1 }
 
-% doAt
+G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
+G2, s2:(e0, e2, -, -); s ;  e0 |- force (addr s2) !! G3 ; v ; t2
+-------------------------------------------------------------------------- :: doAt
+G1 ; s ; e0 |- do @ e1 with e0' { e2 } !! G3; v; t1,t2
 
-% doAtWith
+
+G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
+e0(sym s1) !! sym s2
+G2, s2:(\x.e0(e0'(x)), e2, -, -); s ;  e0 |- force (addr s2) !! G3 ; v ; t2
+-------------------------------------------------------------------------- :: doAtWith
+G1 ; s ; e0 |- do @ e1 with e0' { e2 } !! G3; v; t1,t2

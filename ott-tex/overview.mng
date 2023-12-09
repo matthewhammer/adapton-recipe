@@ -22,9 +22,11 @@
 
 Adapton distinguishes (ordinary) variables from what we call \emph{symbols}.
 
-By \emph{variables}, we mean lexically-scoped names that obey mathematical expectations about substitution and $\alpha$-equivalence.  PL researchers use readily use tools to model these formally and mechanically.
+By \emph{variables}, we mean lexically-scoped names that obey mathematical expectations about substitution and $\alpha$-equivalence.
 
-Adapton symbols give structure to program-determined pointers in a global memory and cache system.
+Adapton variables may range over values that include symbols.
+
+Collectively, symbol choices give structure to program-determined pointers in a global memory and incremental cache system.
 
 In choosing the patterns that symbols use in their programs,
 programmers exercise control over incremental reuse when the program

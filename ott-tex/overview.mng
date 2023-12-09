@@ -41,24 +41,20 @@ In Adapton, symbols serve several interconnected roles:
 \item
 Symbols are first-class values.
 
-\item
- Concretely, each symbol is generally a \emph{tree}, formed from
- binary connectives, perhaps enhanced with balanced delimiters and
- possibly other (simple) connective forms.
+\item Concretely, each symbol is generally a \emph{tree}, formed from
+ binary connectives.  In a practical implementation, these connectives
+ may also include balanced delimiters, like parens, brackets or
+ braces; nevertheless, the structure of the symbol is the structure of
+ this parse tree.
 
 \item
-Symbols organize and address global state, where programs do put and get operations.
-
-%\item
-%Symbol sets index types as type refinements,
-%indicating what symbols and addresses their values contain.
+Collections of symbols are \emph{familes of trees}, and
 
 \item
-Collections of symbols have internal structure as familes of trees, and
+Symbol collections organize and address global state, where programs do put and get operations to populate, use and change it.
 
 \item
-The collective design of symbolic structure by programmers fully determines
-incremental caching and reuse semantics for their program's behavior.
+The put and get operations also organize incremental caching and reuse semantics for program behavior.
 
 \end{itemize}
 

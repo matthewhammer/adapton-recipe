@@ -13,6 +13,14 @@ ott \
     -o formalism.tex \
 
 ott \
+    -merge true \
+    -tex_wrap false \
+    -tex_show_meta false \
+    -tex_show_categories false \
+    -i formalism.ott \
+    -o formalism-commands.tex \
+
+ott \
     -tex_wrap true \
     -i formalism.ott \
     -tex_filter overview.mng overview.tex

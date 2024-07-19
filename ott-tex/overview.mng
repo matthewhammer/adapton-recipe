@@ -1,88 +1,512 @@
+
+
 \documentclass[11pt]{article}
+
 \usepackage{charter}
 \usepackage{euler}
 \usepackage{inconsolata}
 \usepackage{xcolor}
+\usepackage[alternateNonterms]{ottalt}
+\usepackage{amsmath}
 
-\newcommand{\ottnt}[1]{\ensuremath{mathit{#1}}}
-\newcommand{\ottmv}[1]{\ensuremath{\mathit{#1}}}
-\newcommand{\ottkw}[1]{\ensuremath{\mathbf{#1}}}
-\newcommand{\ottcom}[1]{{#1}}
-\newcommand{\ottsym}[1]{{#1}}
+\inputott{formalism-commands}
+
+%\renewcommand{\ottcom}[1]{\textit{#1}}
+
+%% \newcommand{\ottnt}[1]{\ensuremath{mathit{#1}}}
+%% \newcommand{\ottmv}[1]{\ensuremath{\mathit{#1}}}
+%% \newcommand{\ottkw}[1]{\ensuremath{\mathbf{#1}}}
+%% \newcommand{\ottcom}[1]{{#1}}
+%% \newcommand{\ottsym}[1]{{#1}}
 
 \begin{document}
 
-\title{Adapton, distilled and refined.}
+\author{Matthew A. Hammer, \ldots}
+\title{Adapton: Refined, Enriched, Distilled.}
 
 \maketitle
 
-\subsection*{Overview}
+\section{Introduction}
 
-\paragraph{Variable names versus symbol names.}
+Adapton gives a recipe for \textbf{\emph{general-purpose incremental computation}}.
 
-Adapton distinguishes (ordinary) variables from what we call \emph{symbols}.
+\begin{itemize}
+\item ``\textbf{general-purpose}'' here means we care about programs with \emph{general recursion, over general-purpose data structures} (with or without cycles), not some restricted domain-specific language, and
+  
+\item ``\textbf{incremental}'' here means that the program's input \emph{changes incrementally, and we rerun after certain batches of changes.} (We generally want to process multiple changes at once.)
+\end{itemize}
 
-By \emph{variables}, we mean lexically-scoped names that obey mathematical expectations about substitution and $\alpha$-equivalence.
+Adapton's recipe specifies how to extend a pure functional language with read and write operations on global state.
+%
+%(\textbf{put}, \textbf{get}, and
+%\textbf{force}, and a special form of ``lexical-dynamic nesting'').
+%
+By using these primitives, the programmer hides the complexity of
+representing and maintaining their dynamic dependencies.
+%
+Behind the scenes, Adapton's recipe provides a demand-driven
+dependence graph, including semantics for the graph components'
+memoization and change propagation.
 
-Adapton variables may range over values that include symbols.
+In a sense, Adapton enriches the existing \emph{evaluation strategy}
+of a (CBV or CBN) PL with another dimension of evaluation strategy
+that's not captured by either CBV or CBN and whose specification and
+implementation each require a graph representation.
+%
+%Behind the scenes, the Adapton evaluation strategy performs graph creation, use and maintenance as the program evaluates.
 
-Collectively, symbol choices give structure to program-determined pointers in a global memory and incremental cache system.
+In this graph-based strategy, there's an ambient memory for
+communicating values between different points of ``incremental space
+time'', based on symbolic names that are persist across these points.
+%
+These symbols name the program's dynamic and data structure pointers
+in a way that differentiates their ``change positions'' from the data
+that resides there at any given time.
+%
+This level of indirection turns out to be critical for efficient
+incremental responses to changes.
 
-In choosing the patterns that symbols use in their programs,
-programmers exercise control over incremental reuse when the program
-responds to incremental changes.
-
-\paragraph{Symbols as trees.}
-
-In Adapton, symbols serve several interconnected roles:
+Adapton's notion of ``ambient memory'' (and the graphs that implement
+it) permit computations to be \emph{impure} in at least two practical
+ways:
 
 \begin{itemize}
 
-\item
-Symbols are first-class values.
-
-\item Concretely, each symbol is generally a \emph{tree}, formed from
- binary connectives.  In a practical implementation, these connectives
- may also include balanced delimiters, like parens, brackets or
- braces; nevertheless, the structure of the symbol is the structure of
- this parse tree.
-
-\item
-Collections of symbols are \emph{familes of trees}, and
-
-\item
-Symbol collections organize and address global state, where programs do put and get operations to populate, use and change it.
-
-\item
-The put and get operations also organize incremental caching and reuse semantics for program behavior.
+\item \textbf{Reading} from incrementally-changing global state, such as state controlled directly by interactive user input that edits it, or a subcomputation that depends transitively on it somehow.
+  
+\item \textbf{Writing} to incrementally-changing global state, including intermediate results and the final output of the computation.
 
 \end{itemize}
 
+Adapton prescribes a general way to augment a functional
+programming language with primitives to handle these read and write effects.
 
-\paragraph{Support for hash consing.}
+The initial semantics for Adapton (PLDI 2014) restricted writes to
+coincide with ``hash consing'', meaning the programmer had no direct
+control over the hash (the name) for the written pointer.
+%
+This strategy is limited because hashes can be fragile, and in data
+structures, they make names sensitive to non-local changes.
 
-Symbols give an alternative to automatic hash-consing, where the cache
-addresses are determined by content, not by separate program choices.
+For example,
+the head of a linked list has a hash that is impacted by every element
+in the list, not just the meaning attached to the prefix of the list, whatever it may be.
+%
+If this list is used as the intermediate data structure in a larger incremental algorithm, reconstructing its prefix with new (hash) names also means recomputing all downstream dependencies on this data, eventually.
+%
+This example shows how hash consing insists that small changes cascade into large ones.
 
-The symbolic cache actually subsumes hash consing: By choosing the
-symbolic name to coincide with the data itself (or its hash), the
-symbolic store implements hash consing as a mode of use.
+In summary, hash-consed data structures are too senstitive to small changes to be practical on their own, though they still have a role to play.
+
+Later, by introducing \textbf{symbolic names}, write effects
+(including allocations) can be more general, permitting more practical
+incremental data structures and patterns of response to input changes.
+%
+To recover the original (hash consing) semantics, just choose the value's hash as its name.
+%
+By using name values that are not functionally determined by their content (e.g., as hashes), the program introduces a valuable form of \textbf{independence} that permits programs to better isolate small changes in their data structures and subcomputations.
+%
+(See OOPSLA 2015 for a detailed example)
 
 
-\paragraph{Symbol substitution (lack of $\alpha$-equivalence).}
+\paragraph{Named writes.}
+We name writes to achieve better indendepence of distinct parts of a changing data structure.
+%
+Each such write is identified by an input name, a programmer-chosen name, or a combination of those, as computed by the program's logic, which Adapton enhances with practical name introduction forms, like symbolic constants and binary composition.
 
-The structural relationships of symbols in a program reflect a
-deliberate design with important determinative qualities for cache
-performance.
+In this approach, each ``allocation'' is a named write, and is
+determined by the program input (directly or indirectly), and thus is
+deterministic and even ``stable'' across similar executions.
 
-Unlike lexically-bound variables, symbols play a role in naming
-program effects, and are not meant to be ``meaningless'' or freely
-alpha-converted into other symbols.
+Contrast named allocation with the usual (non-hash-consing) kind, where the outer system either makes unstrategic choices for ``fresh'' pointers, or uses a strategy that generally hinders reuse (something for GC practicality, for example).
 
-Instead of alpha conversion, we consider a kind of ``namespace
-substitution'' property that shows how to vary them without affecting
-the incremental semantics (the cache's patterns of reuse, based on
-symbolic choices).
+Named allocation can create an extra logical burden for the programmer to think through, but it's also consistent with long-standing, familar practices in practical incremental systems.
+%
+For instance, programmers have long thought about organizing files in a directory tree such that each change independently from one another, but also reflect functional dependencies across the files too, e.g., based on re-running a tool like \texttt{make}.
+%
+Adapton gives a similar approach, but where the filesystem holds data values (structures), not just text or binary files, and where there is no possible way to misauthor the program (the \texttt{Makefile}) so that it fails to reflect consistent functional dependencies.
 
+\paragraph{Restrictions on effects.}
+%
+Past Adapton systems restrict effects so that, despite being technically impure, programs and their graphs remain \textbf{quasi-pure} (or \emph{quasi-functional}).
+
+Specifically, each named write in a from-scratch consistent program execution is:
+
+\begin{itemize}
+\item \textbf{unique}, meaning each named write is globally unique within the graph.
+  
+\item \textbf{causal}, meaning not read before that unique write has first been incorporated into the repaired graph, by repairing the computation that performs it.  It would be \emph{acausal} to, for example, reorder the memoization of a read to precede the write from which it reads.
+\end{itemize}
+
+
+\paragraph{Relaxing restrictions.}
+
+Past systems for Adapton have forbid the ``\textbf{feedback} effects''
+that naturally arise in a reactive loop, which use non-unique names.
+
+To explain, let's say we have a loop with some state (initialized
+somehow), and with the following three-phase loop body:
+
+\begin{itemize}
+\item \texttt{read} last state
+\item \texttt{compute} new state
+\item \texttt{write} new state
+\end{itemize}
+
+Since the final phase overwrites the data read in the initial phase,
+there's a non-functional pattern in the way that the data flows
+through state.
+
+In particular, the flow feeds back when \texttt{compute} output
+becomes input, consumed and processed again until the loop completes
+(if ever), and the state somehow carries the loop's output.
+
+Even when the loop is not meant to ``complete'', the same point
+remains: the loop state is both an input and an output of the loop
+body and its \texttt{compute} step.
+
+This loop pattern could be encoded in past recipes for Adapton,
+assuming that \emph{feedback is phased, and lifted to the ``outer level.''}
+%
+That is, all feedback occurs at the end, in the final phase (the
+\texttt{compute} step itself contains no write effects that perform
+feedback).
+%
+Further, that final phase needs to happen at ``the outer level'', not
+the ``the inner level'' of the first two steps that read and compute.
+
+This phase and level restriction may not seem like a big problem, but
+it is, as the state-of-the-art makes only the inner level incremental.
+%
+The outer level drives changes and demands output from the inner
+level, but is not itself incrementalized (its role is specialized, and
+its computations are not cached and reused like the inner level).
+
+\paragraph{As above, so below.}
+%
+What we really need is to absorb some abilities of the outer level to
+perform feedback into the allowed behavior of the inner level's regime
+of incremental program effects.
+
+To see why, consider what happens when the loop state consists of
+structured data that only changes in isolated places from one loop
+interaction to the next.
+%
+In that case, it would be desirable or even necessary for the
+\textbf{write} step to have a cost that's proportional to the
+potentially small amount of loop state that's changed, and not the
+total size of the loop state, which is arbitrarily large.
+%
+In that case, we actually want the \textbf{write} step itself to be
+realized as an incremental traversal of the loop state (only visiting
+those places that have changed), similar to how \textbf{compute}
+should act on its own input.
+
+Hence, for any interesting (large, structured) loop state, we really
+need to generalize this phased/leveled approach and support it
+internally, within the inner (incremental) computation.
+%
+To do so, we need to relax the restrictions we place on effects,
+introducing a way to express writes that are delayed until a certain
+subcomputation (e.g., a loop body) completes, and are also written
+``at another time'', in some sense (preserving earlier writes, at
+earlier times, so that we can replay computations that have already
+read those writes and do not ``see'' the later ones).
+
+\paragraph{Base goals.}
+This document aims to give a version of Adapton that:
+
+\begin{itemize}
+\item is simpler than prior systems wherever possible.
+\item is approachable by a large PL paper-reading audience.
+\item subsumes earlier published systems (PLDI 2014, OOPSLA 2015).
+\item subsumes unpublished systems that followed (e.g., the iteration of Adapton reported in May 2017 at a Facebook event)
+\item finally, serves as a good basis for reaching beyond the state-of-the-art.
+\end{itemize}
+
+\paragraph{Beyond.}
+
+Going beyond the base goals:
+
+\begin{itemize}
+\item lift existing restrictions on graph effects to support nested, incrementally-efficient feedback loops.
+\item a static analysis of programs that ensures that program effects do not violate restrictions on effects.
+\end{itemize}
+
+Though not apparently related, these two goals are complementary in
+their conceptions and their implementations.
+%
+In particular, one rich, important, motivating case for nested
+feedback loops arise in the implementation of worklists for static
+analysis, which must determine a schedule for visiting program points
+and updating program facts until they reach a fixed point.
+
+Perhaps worklist algorithms themselves can be absorbed into the
+ambient graph dynamics of an Adapton recipe that supports incremental
+feedback loops?
+
+If so, it may also be possible to express scheduling policies for
+these worklists using ordinary-looking programs that traverse the
+program in a certain preferred way, to maximize the way facts are
+spread.
+
+This visit pattern would be repeated, but incrementally, by an Adapton
+semantics that correctly supports feedback loops nested within larger
+computations (like the pipeline of analysis and transformations in a
+compiler or PL tool, each of which we could also make incremental
+using Adapton).
+
+The key challenge is increasing the possible composition patterns
+supported by Adapton so that the entire interactive development
+experience one enjoys today could be expressed concisely, and its
+redundant parts exploited efficiently in practice.
+
+\section{Graphs}
+
+A graph $[[G]]$ consists of named nodes with special payload and edge
+structure.
+
+
+\ottgrammartabular{
+  \ottG
+  \\[2mm]
+  \otta
+  \\[2mm]
+  \ottA
+  \\
+  \ottb
+  \\[2mm]
+  \ottn
+}
+
+
+\paragraph{Nodes.}
+
+Each node $[[s : n]]$ is named by the symbol~$[[s]]$ and carries the node payload~$[[n]]$, which is either
+
+\begin{itemize}
+\item A \textbf{thunk} value, with optional cached result~$[[v]]$ and trace~$[[t]]$.
+\item A \textbf{non-thunk} value. These nodes have trivial traces and results that coincide with the value itself.
+\end{itemize}
+
+The payload of a graph thunk~$[[s: ( e0 , e , _ , _ )]]$ always
+carries two expressions:
+\begin{itemize}
+\item $[[e0]]$ is a function that localizes the names used in write
+  effects, mapping symbols into larger, more specific ones based on
+  dynamic context.  We call it the \emph{(ambient) namespace} for
+  write effects.  It is restricted to be a pure function that sends
+  symbols to symbols (no write or read effects on graph).
+\item $[[e]]$ is the thunk body itself, and is generally effectful to the ambient graph.
+\end{itemize}
+
+Compared to OOPSLA 2015, the recipe here refines and simplifies the
+presentation of namespaces, making them into ordinary (but pure)
+functions in the ambient programming language.
+
+Like in that work, the role of namespaces is not evident without
+worked example programs that use collection libraries to perform
+incremental algorithms.
+%
+Without them, it's tedious to program and use these libraries in a
+generic-enough way; while possible, library authors tend to reinvent
+the concept of namespaces in their own style, where they pollute the
+library API, making it less concise and readable.
+%
+By including them, we make programs and libraries more concise and
+uniform in their calling conventions.
+  
+\paragraph{Edges (arrows).}
+%
+We call edges ``arrows'' and use $[[a]]$ to range over them.
+
+Each arrow in the graph is oriented with its source at a thunk
+performing the arrow's effect, regardless of the direction of that
+effect's information flow.
+%
+Non-thunk nodes never have out-going arrows in the graph, only incoming ones, if any.
+%
+In particular, when a thunk reads from a reference cell, the thunk is
+the source of the arrow, and the reference cell is arrow's target.
+
+Each arrow generally records the action~$[[A]]$, the read or
+written value~$[[v]]$, and a dirty bit~$[[b]]$ (initially $[[clean]]$)
+that helps maintain global invariants about the graph's consistency or
+inconsistency during (re)evaluation.
+
+An arrow's action~$[[A]]$ indicates how the source and target nodes relate:
+\begin{itemize}
+\item $[[get]]$  relates a thunk to a value it reads.  If the value is a thunk, it's returned like an ordinary value, and is not forced.
+\item $[[put]]$ relates a thunk to a value it writes.
+\item $[[force]]$ relates a thunk to another thunk it forces, whose value it consumes.
+\end{itemize}
+
+Each put action has a write effect on the graph.
+%
+Each get action has a read effect on the graph.
+%
+Forces read the graph and can also write the graph, since they may write a new cached value result.  In every case, they read the cached value result from the graph, as well as the initial expression (at least semantically).
+
+\paragraph{Well-formed graphs.}
+To ensure that incremental evaluation always produces results
+consistent with from-scratch evaluation (a form of ``incremental
+correctness''), graphs must remain \textbf{well-formed}, an invariant
+formally required by the dynamics.
+
+Here, we give an informal description of when a graph is considered
+well formed, in preparation for making evaluation precise, guided by
+these intuitions.
+%
+The full, precise definition of this condition requires that we
+precisely define a lot more first, including program evaluation (next
+section).
+
+In summary, a graph $[[G]]$ is well-formed when each evaluated node~$[[s : (e0, e, v, t)]]$ has a cached result~$[[v]]$ and trace~$[[t]]$ that is either:
+\begin{itemize}
+\item from-scratch consistent with $[[G]]$, transitively, through all of its outgoing arrows, or
+\item \emph{not} consistent, but $[[s]]$ has an outgoing arrow marked $[[dirty]]$ for each potential inconsistency among its dependencies.
+\end{itemize}
+
+More operationally, each write effect to a graph node also marks
+existing arrows as $[[dirty]]$ when their value differs from the write's
+value, either directly, or transitively.
+
+A directly affected node is one that directly writes or reads the
+affected target at some now-outdated value.
+%
+A transitively affected node is either a directly affected node
+itself, a node that directly forces a directly affected node, or one
+that transitively forces it.
+
+To a first approximation, graph well-formedness is just enforcing a
+kind of transitive closure of dirty flags.
+%
+We finish its informal description by informally describing its
+implementation as a \emph{dirtying traversal} that happens after each
+write that changes a node's payload.
+
+\paragraph{Dirtying traversal.}
+To implement this transitive invariant, the dirtying traversal of the
+semantics eagerly walks the graph from the target of a write, checking
+edges and marking them dirty if their value differs from the new one,
+and they are not already dirty.
+%
+It happens after each write, where necessary, before the program
+evaluation continues.
+
+For each newly dirty arrow, the traversal proceeds transitively to the
+arrows that target the arrow's source, marking them dirty if they are
+not already dirty.
+
+In these transitive steps of the traversal, we do not check values
+(the dirty flag is an over-approximation), but we do check to see if
+arrows are already dirty.
+
+The dirtying traversal ``short-circuits'' when it reaches an edge
+that's already dirty; the graph's well-formedness invariant (and its
+implementation as this traversal) ensures that this transitive closure
+has already been marked dirty, and traversing it would hence be wasted
+work (unless to check internal invariants dynamically, and provide
+extra implementation correctness assurances experimentally).
+
+\section{Programs}
+
+The Adapton recipe we present here assumes a CBV host language, with
+its own model of recursive data types, recursive functions, pattern
+matching, etc.
+
+\paragraph{Values.}
+
+The recipe adds a couple of value forms to this otherwise conventional core language.
+%
+These forms consist of \emph{symbols} as first class names, and as
+allocated pointer addresses.
+%
+The recipe extends the meaning of forcing a thunk to the case where a
+thunk is behind a pointer, making that thunk's computation cached and
+incremental.
+
+\ottgrammartabular{
+  \ottv
+  \\[2mm]
+  \otts
+}
+
+
+If the CBV language has no existing thunk value form, we show how to
+add it to the dynamics here.
+
+The Adapton recipe here uses the thunk form in new cases, but does not
+prescribe anything special about ordinary (non-graph-allocated)
+thunks, in contrast to earlier CBPV-based presentations that fused all
+thunks with the ambient global state (PLDI 2014 and OOPSLA 2015).
+
+\paragraph{Expressions.}
+
+We begin by assuming usual CBV expression forms.  Here, we omit most
+cases and only leave let binding, function abstraction, function
+application and certain binary operators.
+
+To these forms, the Adapton recipe also adds expression forms that
+read and write the ambient graph in various practical ways.
+
+\ottgrammartabular{
+  \otte
+  \\[2mm]
+  \otth
+}
+
+Except for the binary composition forms for name values (which are
+each trivial), each new expression form has an interesting,
+non-trivial semantics.
+
+By contrast, the existing core language features (let binding,
+function application, etc.) have rules that do not directly use the
+new dynamics, and thus their rules each follow simple, predictable
+changes to the usual rules one would write.
+%
+The other usual rules (e.g., pattern matching) are omitted, as they
+are similarly affected.
+
+In the next section, we explain the dynamic rules formally.
+%
+For the remainder of this section, we give an informal description,
+and motivation, for each new form.
+
+
+\section{Dynamics}
+
+\subsection{Importing existing rules.}
+
+\[  
+\drule{evalXXval}
+\]
+
+\[
+\drule{evalXXlet}
+\]
+
+\[
+\drule{evalXXapp}
+\]
+
+
+\subsection{Forcing a clean node.}
+
+The following rule captures the case where the program forces a thunk
+node that already exists in the graph, and is currently clean.  In
+this case, the cached value and cached trace can be reused exactly,
+without any repair steps.
+
+\[
+\drule{evalXXforceClean}
+\]
+
+For a programmer using adapton, this rule is critical because it
+represents the behavior we'd prefer as much as possible.
+
+The graph is extended with an arrow that represents the new dependency
+of the ``current thunk'' $[[s]]$ on the forced thunk node $[[s1]]$.
+The arrow has a ``fresh name'' $[[s']]$.
 
 \end{document}

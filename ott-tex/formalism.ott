@@ -16,6 +16,7 @@ formula :: 'formula_' ::=
  | G ( s ) =  n :: :: graphGetNode
  | v1 = v2 :: :: equal
  | v1 /= v2 :: :: notEqual
+ | G1 = G2 :: :: graphEqual
 
 v :: 'v_' ::= {{ com Values. }}
  | \ x . e :: :: lambda {{ com Lambda. }}
@@ -51,6 +52,7 @@ t :: 'trace_' ::= {{ com Traces. }}
  | @ s := v :: :: put {{ com Put into $[[s]]$ value $[[v]]$. }}
  | @ s = v :: :: get {{ com Get from $[[s]]$ equals value $[[v]]$. }}
  | H { t } :: :: nest {{ com Nested subtrace, with head $[[H]]$. }}
+ | { t }_out :: M :: labelUp {{ tex \underbrace{[[t]]}_{\text{output trace} } }}
 
 H :: 'traceHead_' ::= {{ com Nested trace heads. }}
  | force s :: :: force
@@ -61,8 +63,9 @@ H :: 'traceHead_' ::= {{ com Nested trace heads. }}
 G :: 'graph_' ::= {{ com Graphs. }}
  | #empty :: :: empty {{ com Empty graph. }}
  | s : n :: :: node {{ com Graph node. }}
- | a :: :: arrow {{ com Graph edge (``arrow''). }}
+ | sa a :: :: arrow {{ com Graph edge (``arrow''). }} {{ tex [[sa]] : [[a]] }}
  | G1 , G2 :: :: union {{ com Graph union (disjoint). }}
+ | { G }_out :: M :: labelUp {{ tex \underbrace{[[G]]}_{\text{output graph} } }}
 
 a :: 'edge_' ::= {{ com Graph edges (``Arrows''). }}
  | s1 A v b s2 :: :: arrow {{ com Source $[[s1]]$, action $[[A]]$, value $[[v]]$, dirty bit $[[b]]$ and target $[[s2]]$. }}
@@ -77,7 +80,7 @@ b :: 'dirtyBit_' ::= {{ com Dirty bit. }}
  | clean :: :: clean {{ com Clean. }}
  | dirty :: :: dirty {{ com Dirty. }}
 
-n :: 'node_' ::= {{ com Nodes. }}
+n :: 'node_' ::= {{ com Node payloads. }}
  | ( e0 , e , - , - ) :: :: thunkUneval {{ com Thunk, unevaluated. }} {{ tex ([[e0]], [[e]], \boxed{\tiny?}, \boxed{\tiny?}) }}
  | ( e0 , e , v , t ) :: :: thunkEvaled {{ com Thunk, evaluated. }}
  | ( e0 , e , _ , _ ) :: M :: thunkPattern
@@ -88,6 +91,8 @@ s :: 'sym_' ::= {{ com Symbols. }}
  | s1 . s2 :: :: dot {{ com Dot binary connective. }} {{ tex [[s1]]\texttt{.}[[s2]] }}
  | #elipses ::  :: dots {{ com Any identifier or number literal as a symbol. }}
 
+sa :: 'symarr_' ::= {{ com Symbols for arrows. }}
+ | arrow s :: :: arrow {{ com Arrow symbol. }} {{ tex \vec{[[s]]} }}
 
 terminals :: 'terminals_' ::=
 | == :: :: equiv {{ tex \equiv }}
@@ -124,6 +129,11 @@ defns J :: '' ::=
 defn
 G |- s isClean :: :: clean :: 'clean_'
 {{ com Node $[[s]]$ is clean in graph $[[G]]$. }}
+by
+
+defn
+G |- s isFresh :: :: fresh :: 'fresh_'
+{{ com Symbol $[[s]]$ is fresh in graph $[[G]]$. }}
 by
 
 defn
@@ -172,26 +182,30 @@ e0 ( sym s1 ) !! sym s2
 G2 ; s ; e0 |- e2 !! G3 ; v ; t2
 v /= thunk { e3 }
 % dirtyDepsOf(s)
+G3 |- s' isFresh
 ---------------------------------------------------------------------------------------- :: putRef
-G1 ; s ; e0 |- @ e1 := e2 !! G3, s2: v, s put v clean s2 ; addr s2 ; t1,t2, @s2 := v
+G1 ; s ; e0 |- @ e1 := e2 !! G3, s2: v, arrow s' s put v clean s2 ; addr s2 ; t1,t2, @s2 := v
 
 G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
 e0 ( sym s1 ) !! sym s2
 G2 ; s ; e0 |- e2 !! G3 ; v ; t2
 v = thunk { e3 }
 % dirtyDepsOf(s)
+G2 |- s' isFresh
 --------------------------------------------------------------------------------------------------- :: putThunk
-G1 ; s ; e0 |- @ e1 := e2 !! G3, s2: (e0, e3, -, -), s put v clean s2 ; addr s2 ; t1,t2, @s2 := v
+G1 ; s ; e0 |- @ e1 := e2 !! G3, s2: (e0, e3, -, -), arrow s' s put v clean s2 ; addr s2 ; t1,t2, @s2 := v
 
 G1 ; s ; e0 |- e1 !! G2; sym s1 ; t1
 G2(s1) = v
+G2 |- s' isFresh
 ------------------------------------------------------------ :: getRef
-G1 ; s ; e0 |- @ e1 !! G2, s get v clean s1; v; t1, @s = v
+G1 ; s ; e0 |- @ e1 !! G2, arrow s' s get v clean s1; v; t1, @s = v
 
 G1 ; s ; e0 |- e1 !! G2; sym s1 ; t1
 G2(s1) = (e0', e2, _, _)
+G2 |- s' isFresh
 -------------------------------------------------------------------------------------- :: getThunk
-G1 ; s ; e0 |- @ e1 !! G2, s get thunk {e2} clean s1; thunk {e2}; t1, @s = thunk {e2}
+G1 ; s ; e0 |- @ e1 !! G2, arrow s' s get thunk {e2} clean s1; thunk {e2}; t1, @s = thunk {e2}
 
 G1 ; s ; e0 |- e !! G2 ; thunk { e1 } ; t1
 G2 ; s ; e0 |- e1 !! G3 ; v ; t2
@@ -201,35 +215,40 @@ G1 ; s ; e0 |- force e !! G2 ; v ; t1,t2
 G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
 G2(s1) = (e0', e1, v, t2)
 G2 |- s1 isClean
----------------------------------------------------------------------------- :: forceClean
-G1 ; s ; e0 |- force e !! G2, s force v clean s1 ; v ; t1, force s1 { t2 }
+G2 |- s' isFresh
+------------------------------------------------------------------------------------------------------- :: forceClean
+G1 ; s ; e0 |- force e !! { G2, arrow s' s force v clean s1 }_out ; v ; { t1, force s1 { t2 } }_out
 
 G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
 G1(s1) = (e0', e1, -, -)
 G2 ; s1 ; e0' |- e1 !! G3 ; v ; t2
------------------------------------------------------------------------------------------------- :: forceEval
-G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v, t2), s force v clean s1 ; v ; t1, force s1{ t2 }
+G3 |- s' isFresh
+-------------------------------------------------------------------------------------------------------- :: forceEval
+G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v, t2), arrow s' s force v clean s1 ; v ; t1, force s1{ t2 }
 
 G1 ; s ; e0 |- e !! G2 ; addr s1 ; t1
 G2(s1) = (e0', e1, v, t2)
 G2 |- s1 dirty
 G2 ; s1 ; e0' |- e1 !! G3 ; v' ; t2'
-------------------------------------------------------------------------------------------------------- :: forceDirty
-G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v', t2'), s force v' clean s1 ; v' ; t1, force s1 { t2' }
+G3 |- s' isFresh
+-------------------------------------------------------------------------------------------------------------- :: forceDirty
+G1 ; s ; e0 |- force e !! G3, s1 : (e0', e1, v', t2'), arrow s' s force v' clean s1 ; v' ; t1, force s1 { t2' }
 
 G1 ; s ; \x.e0(e0'(x)) |- e1 !! G2 ; v ; t1 
 -------------------------------------------------------------- :: with
 G1 ; s ; e0 |- with e0' { e1 } !! G2 ; v ; with e0' { t1 }
 
-G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
-e0 ( sym s1 ) !! sym s2
-G2, s2:(e0, e2, -, -); s ;  e0 |- force (addr s2) !! G3 ; v ; force s2 { t2 }
------------------------------------------------------------------------------ :: doAt
-G1 ; s ; e0 |- do @ e1 { e2 } !! G3; v; t1, do @s2 { t2 }
 
 
-G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
-e0(sym s1) !! sym s2
-G2, s2:(\x.e0(e0'(x)), e2, -, -); s ;  e0 |- force (addr s2) !! G3 ; v ; force s2 { t2 }
----------------------------------------------------------------------------------------- :: doAtWith
-G1 ; s ; e0 |- do @ e1 with e0' { e2 } !! G3; v; t1, do @s2 with e0' { t2 }
+%% G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
+%% e0 ( sym s1 ) !! sym s2
+%% G2, s2:(e0, e2, -, -); s ;  e0 |- force (addr s2) !! G3 ; v ; force s2 { t2 }
+%% ----------------------------------------------------------------------------- :: doAt
+%% G1 ; s ; e0 |- do @ e1 { e2 } !! G3; v; t1, do @s2 { t2 }
+
+
+%% G1 ; s ; e0 |- e1 !! G2 ; sym s1 ; t1
+%% e0(sym s1) !! sym s2
+%% G2, s2:(\x.e0(e0'(x)), e2, -, -); s ;  e0 |- force (addr s2) !! G3 ; v ; force s2 { t2 }
+%% ---------------------------------------------------------------------------------------- :: doAtWith
+%% G1 ; s ; e0 |- do @ e1 with e0' { e2 } !! G3; v; t1, do @s2 with e0' { t2 }

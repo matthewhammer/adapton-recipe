@@ -1,7 +1,7 @@
-examples.tex
 overview.tex
-fumola.v
-fumola.tex
+formalism-autogen.tex
+formalism-commands.tex
+formalism.tex
 *.aux
 *.log
 *~

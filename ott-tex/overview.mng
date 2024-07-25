@@ -1,15 +1,24 @@
-
-
 \documentclass[11pt]{article}
 
+\usepackage{tikz}
+\usetikzlibrary{shapes, arrows.meta, positioning}
+
+\usepackage{makecell}
 \usepackage{charter}
 \usepackage{euler}
 \usepackage{inconsolata}
 \usepackage{xcolor}
 \usepackage[alternateNonterms]{ottalt}
 \usepackage{amsmath}
+\usepackage{geometry}
+
+% \usepackage{bm} % bold tt font in math mode
+
+\geometry{margin=1in}
 
 \inputott{formalism-commands}
+
+\renewcommand{\ottkw}[1]{\mathtt{#1}}
 
 %\renewcommand{\ottcom}[1]{\textit{#1}}
 
@@ -21,8 +30,8 @@
 
 \begin{document}
 
-\author{Matthew A. Hammer, \ldots}
-\title{Adapton: Refined, Enriched, Distilled.}
+\author{Matthew A. Hammer}
+\title{The Adapton Recipe}
 
 \maketitle
 
@@ -36,28 +45,60 @@ Adapton gives a recipe for \textbf{\emph{general-purpose incremental computation
 \item ``\textbf{incremental}'' here means that the program's input \emph{changes incrementally, and we rerun after certain batches of changes.} (We generally want to process multiple changes at once.)
 \end{itemize}
 
-Adapton's recipe specifies how to extend a pure functional language with read and write operations on global state.
+\noindent
+Adapton's recipe is a PL design and implementation recipe, best
+applied by a team doing both, with full control over both.
 %
-%(\textbf{put}, \textbf{get}, and
-%\textbf{force}, and a special form of ``lexical-dynamic nesting'').
-%
-By using these primitives, the programmer hides the complexity of
-representing and maintaining their dynamic dependencies.
-%
+The recipe maps a purely functional fragment of this team's PL into
+another PL fragment that is both incremental and stateful, enriching
+the original (subset of the) source PL with read and write operations
+on global state.
+
+
+\begin{center}
+\begin{tikzpicture}[node distance=3.5cm, every node/.style={draw, align=center}]
+
+  % Left outer blob
+  \node (outerblob) [circle, minimum size=4cm] {};
+  
+  % Left inner blob
+  \node (innerblob) [circle, minimum size=2.5cm, dotted] at (outerblob.center) {\it purely-functional\\\it fragment of\\ PL};
+
+  % Right blob
+  \node (rightblob) [circle, minimum size=2.5cm, right=of innerblob, line width=0.5mm] {\bf general-purpose,\\\bf incremental\\ PL};
+
+  % Arrow with text
+  \draw[->,  line width=0.5mm, >=Stealth] (innerblob) -- node[midway, above, draw=none] {Adapton\\Recipe} (rightblob);
+
+\end{tikzpicture}
+\end{center}
+
+\noindent
+By employing with these new primitives, the program expresses dependencies
+between inputs and outputs (reading the former and writing the later),
+and Adapton hides the complexity of representing and maintaining these
+dynamic dependencies.
+
 Behind the scenes, Adapton's recipe provides a demand-driven
 dependence graph, including semantics for the graph components'
-memoization and change propagation.
-
-In a sense, Adapton enriches the existing \emph{evaluation strategy}
-of a (CBV or CBN) PL with another dimension of evaluation strategy
-that's not captured by either CBV or CBN and whose specification and
-implementation each require a graph representation.
+memoization and change propagation
+\footnote{
+In a sense, Adapton enriches the existing (CBV or CBN)
+\emph{evaluation strategy} of a PL with an additional dimension of
+evaluation that requires a persistent a graph representation of the
+program's past behavior.
 %
-%Behind the scenes, the Adapton evaluation strategy performs graph creation, use and maintenance as the program evaluates.
+In this presentation of the recipe, we focus on a CBV host language.
+%
+Past presentations used call-by-push-value (CBPV) which avoids the
+choice between CBV and CBN by subsuming both; however, a CBPV
+presentation can be confusing for newcomers, so we use CBV here.
+}.
 
-In this graph-based strategy, there's an ambient memory for
-communicating values between different points of ``incremental space
-time'', based on symbolic names that are persist across these points.
+In this graph-based strategy, there's an ambient memory (global state)
+for communicating values between different points of incremental
+space-time, based on symbolic names whose definitions persist across
+distinct incremental runs.
 %
 These symbols name the program's dynamic and data structure pointers
 in a way that differentiates their ``change positions'' from the data
@@ -261,91 +302,170 @@ supported by Adapton so that the entire interactive development
 experience one enjoys today could be expressed concisely, and its
 redundant parts exploited efficiently in practice.
 
+\section{Symbols}
+
+The Adapton recipe uses the notion of ``symbols.'' A symbol is a
+unique identifier, determined dynamically by a running program, or fed
+as part of its input, or some combination of those two methods.
+%
+When used to name something, like a specific datum or sub-computation,
+the incremental program also implicitly says when and where to reuse
+it later, as the program re-executes incrementally.
+
+Specifically, each graph component (node or edge) is uniquely named
+by a symbol $[[s]]$, adorned with a special symbol constructor that
+indicates whether it names a node or edge in the graph.
+%
+We call these symbols \emph{pointers}, as they identify unique objects
+in the ambient graph.
+
+\ottgrammartabular{
+  \ottp
+  \\[2mm]
+  \otts
+}
+
+Each unadorned symbol $[[s]]$ is made of one or more literals,
+combined with binary composition operators.
+%
+The details of these literal symbols (numbers, strings, etc) and
+binary composition operators is inconsequential to the rest of the
+Adapton recipe.
+
+Any conventions that make sense for the ambient host PL will work;
+here, we assume two binary composition forms that get overloaded: the
+dot operator usually reserved for field access, and the minus operator
+usually reserved for arithmetic.
+%
+We overload these symbols with the intention of mimicking common
+composit names in UNIX, where dashes and dots are common word
+separators.
+
 \section{Graphs}
 
 A graph $[[G]]$ consists of named nodes with special payload and edge
 structure.
-
-
+  
 \ottgrammartabular{
   \ottG
-  \\[2mm]
-  \otta
+}
+
+\ottgrammartabular{
+  \ottNodeData
+  \\[1.5mm]
+  \ottEdgeData
+}
+
+\ottgrammartabular{
+  \ottt
+}
+
+\ottgrammartabular{
   \\[2mm]
   \ottA
   \\
   \ottb
-  \\[2mm]
-  \ottn
 }
-
 
 \paragraph{Nodes.}
 
-Each node $[[s : n]]$ is named by the symbol~$[[s]]$ and carries the node payload~$[[n]]$, which is either
+Each node $[[p : NodeData]]$ carries node data, which is either
 
 \begin{itemize}
-\item A \textbf{thunk} value, with optional cached result~$[[v]]$ and trace~$[[t]]$.
-\item A \textbf{non-thunk} value. These nodes have trivial traces and results that coincide with the value itself.
+\item A \textbf{reference cell} node with (an empty trace and) a fully-evaluated value~$[[v]]$.
+\item A \textbf{thunk} node, either being
+  \begin{itemize}
+  \item \emph{Unevaluated}, with a path function~$[[path]]$ and body~$[[e]]$, or
+  \item \emph{Evaluated}, with an additional cached trace~$[[t]]$ and result value~$[[v]]$.
+  \end{itemize} 
 \end{itemize}
 
-The payload of a graph thunk~$[[s: ( e0 , e , _ , _ )]]$ always
+Whether evaluated or not, a thunk node~$[[p: ( path , e , _ , _ )]]$ always
 carries two expressions:
 \begin{itemize}
-\item $[[e0]]$ is a function that localizes the names used in write
-  effects, mapping symbols into larger, more specific ones based on
-  dynamic context.  We call it the \emph{(ambient) namespace} for
-  write effects.  It is restricted to be a pure function that sends
-  symbols to symbols (no write or read effects on graph).
-\item $[[e]]$ is the thunk body itself, and is generally effectful to the ambient graph.
+\item $[[path]]$ is a path function representing the \emph{(ambient) namespace} of the thunk.
+\item $[[e]]$ is the thunk body itself.
 \end{itemize}
 
-Compared to OOPSLA 2015, the recipe here refines and simplifies the
-presentation of namespaces, making them into ordinary (but pure)
-functions in the ambient programming language.
+\paragraph{The ambient path function.}
+%
+The path function~$[[path]]$ is used by the \textbf{put} operation when it writes
+the graph to create a \emph{global pointer symbol} from a given
+\emph{local symbol value}.
 
-Like in that work, the role of namespaces is not evident without
+Unlike the thunk body, the path function is restricted to be a pure
+function that sends symbols to symbols, while performing no write or
+read effects on graph itself.
+%
+Each write performed by the thunk body's uses this function to
+localize written pointers to a specific dynamic invocation, mapping
+locally-defined symbols into larger, more specific ones based on the
+dynamic context that defined the path function
+\footnote{
+Compared to OOPSLA 2015, the recipe here refines and simplifies the
+presentation of ``namespaces,'' making them into ordinary (but pure)
+functions in the ambient programming language.
+%
+Here, we call them ``path functions'', but the role is the same.
+
+Like in that work, the role of paths/namespaces is not evident without
 worked example programs that use collection libraries to perform
 incremental algorithms.
 %
 Without them, it's tedious to program and use these libraries in a
 generic-enough way; while possible, library authors tend to reinvent
-the concept of namespaces in their own style, where they pollute the
+the concept of paths/namespaces in their own style, where they pollute the
 library API, making it less concise and readable.
 %
 By including them, we make programs and libraries more concise and
 uniform in their calling conventions.
-  
-\paragraph{Edges (arrows).}
-%
-We call edges ``arrows'' and use $[[a]]$ to range over them.
+}.
 
-Each arrow in the graph is oriented with its source at a thunk
-performing the arrow's effect, regardless of the direction of that
-effect's information flow.
-%
-Non-thunk nodes never have out-going arrows in the graph, only incoming ones, if any.
-%
-In particular, when a thunk reads from a reference cell, the thunk is
-the source of the arrow, and the reference cell is arrow's target.
 
-Each arrow generally records the action~$[[A]]$, the read or
+\paragraph{Edges.}
+%
+Each edge records the action~$[[A]]$, the read or
 written value~$[[v]]$, and a dirty bit~$[[b]]$ (initially $[[clean]]$)
 that helps maintain global invariants about the graph's consistency or
 inconsistency during (re)evaluation.
 
-An arrow's action~$[[A]]$ indicates how the source and target nodes relate:
+Each edge in the graph is oriented with its source at a thunk node
+performing the edge's effect, regardless of the direction of that
+effect's information flow.
+%
+In particular, when a thunk node~$[[p]]$ reads (\textbf{get}s or
+\textbf{force}s) another node~$[[q]]$, that effect is performed by
+$[[p]]$ and thus $[[p]]$ is source of the edge, and $[[q]]$ is the
+target, even though the current value of $[[q]]$ flows to the current
+continuation of node~$[[p]]$.
+%
+As a consequence of the graph's edge orientation, non-thunk nodes
+never have out-going edges in the graph, only incoming ones, if any at
+all.
+
+An edge's action~$[[A]]$ indicates how the source and target nodes relate:
 \begin{itemize}
-\item $[[get]]$  relates a thunk to a value it reads.  If the value is a thunk, it's returned like an ordinary value, and is not forced.
-\item $[[put]]$ relates a thunk to a value it writes.
-\item $[[force]]$ relates a thunk to another thunk it forces, whose value it consumes.
+
+\item a $[[get]]$ action relates a thunk to a value it reads.  If the value is
+  a thunk, it's returned like an ordinary value, and is not
+  forced. Each $[[get]]$ action has a \textbf{read} effect on the
+  graph, and no write (mutation) effects.
+
+\item a $[[put]]$ action relates a thunk to a value it writes.
+  Each $[[put]]$ action has a \textbf{write} effect on the graph.
+
+\item a $[[force]]$ action relates a thunk to another thunk it forces,
+  whose value it consumes.  Forces \textbf{read} the graph and can
+  also \textbf{write} the graph, since they read the initial
+  expression or cached result, and may also write a new cached value
+  result during incremental re-evaluation.
+  %
+  In every case, they read the result value result from the graph,
+  whether or not that result value is uncached, pre-cached (and clean)
+  or re-computed (due to being dirty).
+
 \end{itemize}
 
-Each put action has a write effect on the graph.
-%
-Each get action has a read effect on the graph.
-%
-Forces read the graph and can also write the graph, since they may write a new cached value result.  In every case, they read the cached value result from the graph, as well as the initial expression (at least semantically).
 
 \paragraph{Well-formed graphs.}
 To ensure that incremental evaluation always produces results
@@ -363,12 +483,12 @@ section).
 
 In summary, a graph $[[G]]$ is well-formed when each evaluated node~$[[s : (e0, e, v, t)]]$ has a cached result~$[[v]]$ and trace~$[[t]]$ that is either:
 \begin{itemize}
-\item from-scratch consistent with $[[G]]$, transitively, through all of its outgoing arrows, or
-\item \emph{not} consistent, but $[[s]]$ has an outgoing arrow marked $[[dirty]]$ for each potential inconsistency among its dependencies.
+\item from-scratch consistent with $[[G]]$, transitively, through all of its outgoing edges, or
+\item \emph{not} consistent, but $[[s]]$ has an outgoing edge marked $[[dirty]]$ for each potential inconsistency among its dependencies.
 \end{itemize}
 
 More operationally, each write effect to a graph node also marks
-existing arrows as $[[dirty]]$ when their value differs from the write's
+existing edges as $[[dirty]]$ when their value differs from the write's
 value, either directly, or transitively.
 
 A directly affected node is one that directly writes or reads the
@@ -394,13 +514,13 @@ and they are not already dirty.
 It happens after each write, where necessary, before the program
 evaluation continues.
 
-For each newly dirty arrow, the traversal proceeds transitively to the
-arrows that target the arrow's source, marking them dirty if they are
+For each newly dirty edge, the traversal proceeds transitively to the
+edges that target the edge's source, marking them dirty if they are
 not already dirty.
 
 In these transitive steps of the traversal, we do not check values
 (the dirty flag is an over-approximation), but we do check to see if
-arrows are already dirty.
+edges are already dirty.
 
 The dirtying traversal ``short-circuits'' when it reaches an edge
 that's already dirty; the graph's well-formedness invariant (and its
@@ -419,8 +539,8 @@ matching, etc.
 
 The recipe adds a couple of value forms to this otherwise conventional core language.
 %
-These forms consist of \emph{symbols} as first class names, and as
-allocated pointer addresses.
+These forms consist of symbols as first-class values, and as allocated
+pointer names.
 %
 The recipe extends the meaning of forcing a thunk to the case where a
 thunk is behind a pointer, making that thunk's computation cached and
@@ -428,8 +548,6 @@ incremental.
 
 \ottgrammartabular{
   \ottv
-  \\[2mm]
-  \otts
 }
 
 
@@ -448,7 +566,9 @@ cases and only leave let binding, function abstraction, function
 application and certain binary operators.
 
 To these forms, the Adapton recipe also adds expression forms that
-read and write the ambient graph in various practical ways.
+affect the ambient graph: \textbf{put}, \textbf{get}, \textbf{force}
+and \textbf{nest}, each using the new value forms of symbols or
+pointers, or both:
 
 \ottgrammartabular{
   \otte
@@ -456,7 +576,7 @@ read and write the ambient graph in various practical ways.
   \otth
 }
 
-Except for the binary composition forms for name values (which are
+Except for the binary composition forms for symbol values (which are
 each trivial), each new expression form has an interesting,
 non-trivial semantics.
 
@@ -473,25 +593,83 @@ In the next section, we explain the dynamic rules formally.
 For the remainder of this section, we give an informal description,
 and motivation, for each new form.
 
+\paragraph{Do-at notation.}
+
+The ``do-at'' notation is shorthand for the common programming idiom
+of writing a thunk to the graph with a name (here, $[[e1]]$) and then
+immediately forcing it's evaluation (the body $[[e2]]$):
+
+\[
+\begin{array}{rl}
+  [[ do @e1 { e2 } ]]
+  \\
+  \equiv
+  &[[let x = @e1 := thunk { e2 } in]] \\
+  &[[force x]]
+\end{array}
+\]
+
+\paragraph{Do-at-with notation.}
+
+\[
+  [[do @e1 with path { e2 }]]
+  ~~~\equiv~~~
+      [[do @ e1 { with path { e2 } }]]
+\]
 
 \section{Dynamics}
 
 \subsection{Importing existing rules.}
 
-\[  
-\drule{evalXXval}
+\begin{mathpar}
+
+  \drule{evalXXval}
+
+  \drule{evalXXlet}
+
+  \drule{evalXXapp}
+
+\end{mathpar}
+
+\subsection{Writing a value.}
+
+\[
+\drule{evalXXputRef}
 \]
 
 \[
-\drule{evalXXlet}
+\drule{evalXXputThunk}
+\]
+
+
+\subsection{Distinguishing paths via \texttt{with}.}
+
+\[
+\drule{evalXXwith}
+\]
+
+\subsection{Reading a value.}
+
+\[
+\drule{evalXXgetRef}
 \]
 
 \[
-\drule{evalXXapp}
+\drule{evalXXgetThunk}
+\]
+
+\subsection{Forcing a fresh thunk.}
+
+\[
+\drule{evalXXforcePure}
+\]
+
+\[
+\drule{evalXXforceEval}
 \]
 
 
-\subsection{Forcing a clean node.}
+\subsection{Forcing a clean thunk.}
 
 The following rule captures the case where the program forces a thunk
 node that already exists in the graph, and is currently clean.  In
@@ -505,8 +683,8 @@ without any repair steps.
 For a programmer using adapton, this rule is critical because it
 represents the behavior we'd prefer as much as possible.
 
-The graph is extended with an arrow that represents the new dependency
+The graph is extended with an edge that represents the new dependency
 of the ``current thunk'' $[[s]]$ on the forced thunk node $[[s1]]$.
-The arrow has a ``fresh name'' $[[s']]$.
+The edge has a ``fresh name'' $[[s']]$.
 
 \end{document}

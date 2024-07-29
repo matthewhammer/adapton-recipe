@@ -572,7 +572,9 @@ pointers, or both:
 
 \ottgrammartabular{
   \otte
-  \\[2mm]
+}
+
+\ottgrammartabular{
   \otth
 }
 
@@ -596,8 +598,8 @@ and motivation, for each new form.
 \paragraph{Do-at notation.}
 
 The ``do-at'' notation is shorthand for the common programming idiom
-of writing a thunk to the graph with a name (here, $[[e1]]$) and then
-immediately forcing it's evaluation (the body $[[e2]]$):
+of writing a thunk to the graph with a name (here,~$[[e1]]$) and then
+immediately forcing it's evaluation (the body~$[[e2]]$):
 
 \[
 \begin{array}{rl}

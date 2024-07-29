@@ -45,9 +45,9 @@ e, path {{ tex \pi }} :: 'e_' ::= {{ com \makecell[l]{Expressions~\hspace{1in}\\
  | ( e ) :: M :: paren {{ com Paren. }}
 
 h :: 'head_' ::= {{ com Nested expression heads (assume body $[[e2]]$). }}
- | with path :: :: with {{ com Extend the written symbols' pointers with path $[[path]]$ }}
- | do @ e1 :: :: doAt {{ com  }}
- | do @ e1 with path :: :: doAtWith {{ com  }}
+ | with path :: :: with {{ com Extend the written symbols' pointers with path $[[path]]$. }}
+ | do @ e1 :: :: doAt {{ com  Macro for common idiom (put thunk and force it immediately). }}
+ | do @ e1 with path :: :: doAtWith {{ com Macro for combined \texttt{do} and \texttt{with}. }}
 
 t :: 'trace_' ::= {{ com Traces. }}
  | t1 , t2 :: :: seq {{ com Sequence subtraces $[[t1]]$ and $[[t2]]$. }}
@@ -148,6 +148,29 @@ e !! v :: :: pureEval :: 'pureEval_'
 {{ com Pure evaluation. }}
 by
 
+% to do
+% -------
+% clean(G, p) = (G', v)
+% dirtyInconsis(G, p, v) = G'
+% dirtyAllInto(G, p) = G'
+
+defn
+Clean G ; p !! G' ; v
+:: :: Clean :: 'Clean_'
+{{ com Cleaning. }}
+by
+
+defn
+DirtyAffected G ; p ; v !! G'
+:: :: DirtyAffected :: 'DirtyAffected_'
+{{ com Dirty all affected edges. }}
+by
+
+defn
+DirtyForces G ; p !! G'
+:: :: DirtyForces :: 'DirtyForces_'
+{{ com Dirty all force edges. }}
+by
 
 defn
 G1 ; p ; path |- e !! G2 ; t ; v ::  :: eval :: 'eval_'

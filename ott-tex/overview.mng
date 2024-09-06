@@ -1,5 +1,7 @@
 \documentclass[11pt]{article}
 
+\usepackage{lineno}
+
 \usepackage{tikz}
 \usetikzlibrary{shapes, arrows.meta, positioning}
 
@@ -34,6 +36,8 @@
 \title{The Adapton Recipe}
 
 \maketitle
+
+\linenumbers
 
 \section{Introduction}
 

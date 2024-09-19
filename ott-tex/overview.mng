@@ -33,7 +33,10 @@
 \begin{document}
 
 \author{Matthew A. Hammer}
-\title{The Adapton Recipe}
+\title{The Adapton Recipe
+  \\
+  \small The Essence of Demanded Computation Graphs
+}
 
 \maketitle
 

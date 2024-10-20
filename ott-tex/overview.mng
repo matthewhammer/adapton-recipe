@@ -44,14 +44,23 @@
 
 \section{Introduction}
 
-Adapton gives a recipe for \textbf{\emph{general-purpose incremental computation}}.
+A computer program has the potential to be \textbf{incremental} if
+rerunning it on similar inputs results in similar steps, and similar
+outputs.
+%
+A fully-realized incremental program is one where the observed
+behavior is the same as the ordinary, ``from-scratch'' version of its
+computation, but where the redundant work for similar steps is
+avoided, somehow, making it more efficient to compute.
 
+Adapton gives a recipe for
+\textbf{\emph{general-purpose incremental computation}}.
+%
 \begin{itemize}
-
 \item ``\textbf{general-purpose}'' here means we care about programs
   with \emph{general recursion, over general-purpose data structures}
-  (with or without cycles), not some restricted domain-specific
-  language, and
+  with or without mutation and cycles (as opposed to a more restricted
+  domain-specific language), and
   
 \item ``\textbf{incremental}'' here means two complementary things at once:
   \begin {itemize}
@@ -143,72 +152,84 @@ programming language with primitives to handle these read and write effects.
 
 \subsection{Naming strategies and program complexity}
 
-The initial semantics for Adapton (PLDI 2014) focused on an initial
-definition of demanded computation graphs (DCGs) and their maintenance
-via initial dirtying and cleaning algorithms.
+The initial semantics for Adapton (PLDI 2014) defined demanded
+computation graphs (DCGs).  It maintained these graphs' consistency
+status via dirtying and cleaning algorithms.  These algorithms
+transition graph components between two possible states: potentially
+inconsistent (``dirty'') and definitely consistent (``clean'').
+
+Initially, the Adapton recipe focused on a simple cache model: A mutable
+input store, created and changed by the ambient editor, and a cached DCG
+whose graph components were identified and reused dynamically via hash
+consing
 %
-Initially, the Adapton recipe focused on a simple model: A mutable
-input store (created and changed by the ambient editor) and a DCG that
-was limited to definitions based on hash consing.
+\footnote{
 %
-While always ``correct'' (no consistency issues follow from this
-choice), the programmer also gets no direct control over the hash (the
-name) for the written pointer.
+%A hash is a symbolic name produced by a hash function.
 %
-Follow on work showed how that approach was severely limited in many
-important cases, and gave a generalization based on dynamic symbols
-that help name DCG components, providing more precise and effective
-incremental behavior \cite{ICWithNames}.
+Hash consing is the canonical way to cache data structures and avoid
+allocating otherwise-equivalent, duplicate copies; it identifies shared dynamic
+allocations using the hash of the allocations' written data, written
+to a so-called \emph{memoization table} that tracks each unique hash
+currently in use.  Initially, the Adapton recipe used this technique
+to name every DCG node (excluding initial input cells), as it
+identified every incremental program-allocated thunk or reference cell
+with a hash of its defining data.
+%
+}.
+%
+While always ``correct'' (no name-consistency issues follow from this
+naming strategy), the programmer also gets no direct control over the
+name for the written pointer.
+
+The hash-consing naming strategy is limited because hashes can be
+fragile, and in data structures, they make names sensitive to
+non-local changes.
+%
+For example, the head of a linked list has a hash that is impacted by
+every element in the list, not just the meaning attached to the prefix
+of the list, whatever it may be.
+%
+If this list is used as the intermediate data structure in a larger
+incremental algorithm, reconstructing its prefix with new (hash) names
+also means recomputing all downstream dependencies on this data,
+eventually.
+%
+This example shows how hash consing insists that small changes cascade
+into large ones.
+%
+Indeed, follow on work showed how that approach was severely limited
+in many important cases (like this one), and gave a generalization
+providing more precise and effective incremental behavior
+\cite{ICWithNames}.
 
 While more powerful, the drawback of this more general recipe is the
-more complex programmering required for programmers to use it in their
-programs.  Here, they need to conciously choose an ``(incremental)
-naming strategy'' for their programs that leads to the dynamic
-behavior that they desire across the incremental IO that they
-anticipate (that is, the expected pattern of input changes and output
-observations that they anticipate).
+more complex programmering model.
 %
-They can always fall back to hash consing, but to get the best
-behavior, that choice often falls very short or fails entirely.
+% TO DO -- Cite Personal Correspondance with Yan Chen
+%
+To gain the extra power, programmers need to conciously choose an
+``(incremental) naming strategy'' for their programs that leads to the
+dynamic behavior that they desire.
+%
+Specifically, the programmer needs to consider their algorithm's cache
+behavior across the the expected pattern of input changes and output
+observations that they anticipate.
+%
+If that consideration is too complicated, they can always fall back to
+hash consing every allocation, but to get the best behavior, that
+choice often falls very short or fails entirely, as discussed.
 
 This ``naming strategy'' design task can be complex, much like
-developing an entirely new algorithm.
+developing an entirely new algorithm is often a complex design task.
 %
-However, it also seems necessary: Without the power of defining a
-unique naming strategy, relying on implicit approaches (like hash
-consing) alone does not lead to desirable incremental behavior in many
-important cases.
+However, in summary, it also seems necessary to get the best
+incremental performance possible within ``interesting'' incremental programs.
 %
 \footnote{ There's a long-running CS joke that there are ``only''
 three hard problems in all of CS: (1) Naming things (2) Cache invalidation
 and (3) Off-by-one errors.  The evolution of the Adapton Recipe is about viewing (1) and (2) as two vantage points of a single,
 persistent CS problem to solve.  }
-
-
-
-This definition is limited because hashes can be fragile, and in data
-structures, they make names sensitive to non-local changes.
-%
-For example,
-the head of a linked list has a hash that is impacted by every element
-in the list, not just the meaning attached to the prefix of the list, whatever it may be.
-%
-If this list is used as the intermediate data structure in a larger incremental algorithm, reconstructing its prefix with new (hash) names also means recomputing all downstream dependencies on this data, eventually.
-%
-This example shows how hash consing insists that small changes cascade into large ones.
-
-In summary, hash-consed data structures are too senstitive to small changes to be practical on their own, though they still have a role to play.
-
-Later, by introducing \textbf{symbolic names}, write effects
-(including allocations) can be more general, permitting more practical
-incremental data structures and patterns of response to input changes.
-%
-To recover the original (hash consing) semantics, just choose the value's hash as its name.
-%
-By using name values that are not functionally determined by their content (e.g., as hashes), the program introduces a valuable form of \textbf{independence} that permits programs to better isolate small changes in their data structures and subcomputations.
-%
-(See OOPSLA 2015 for a detailed example)
-
 
 \paragraph{Named writes.}
 We name writes to achieve better indendepence of distinct parts of a changing data structure.

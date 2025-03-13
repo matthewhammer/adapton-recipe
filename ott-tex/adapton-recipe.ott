@@ -1,0 +1,153 @@
+embed {{ tex-preamble
+\usepackage{charter}
+%\usepackage{euler}
+\usepackage{inconsolata}
+\usepackage{mathabx} % for otriangleup
+\usepackage{xcolor}
+\usepackage{makecell}
+}}
+
+metavar x , y , z ::=
+{{ coq nat}} {{ coq-equality }}
+
+grammar
+
+terminals :: 'terminals_' ::=
+| == :: :: equiv {{ tex \equiv }}
+| /= :: :: noteq {{ tex  \neq }}
+| forall :: :: forall {{ tex \forall }}
+| exists :: :: exists {{ tex \exists }}
+| %% :: :: apart {{ tex \otriangleup }}
+| \ :: :: lambda {{ tex \lambda }}
+| |-> :: :: mapsto {{ tex \mapsto }}
+| -> :: :: rightarrow {{ tex \texttt{->} }}
+| => :: :: thickrightarrow {{ tex \texttt{=>} }}
+| := :: :: defineOrAssign {{ tex \mathrel{\texttt:\texttt=} }}
+| * :: :: cdot {{ tex \texttt{*} }}
+| ^* :: :: stepStar {{ tex \texttt{\^{}*} }}
+| +* :: :: plusStar {{ tex \texttt{+*} }}
+| & :: :: amp {{ tex \texttt{\&} }}
+| ! :: :: bang {{ tex \texttt{!} }}
+| @ :: :: at {{ tex \texttt{@} }}
+| >> :: :: mapOp {{ tex \texttt{>>} }}
+| % :: :: projectOp {{ tex \texttt{\%} }}
+| ~ :: :: tilde {{ tex \texttt{\textasciitilde} }} {{ com Text ascii tilde. }}
+| |- :: :: vdash {{ tex \vdash }}
+| ;; :: :: dsemi {{ tex {~|~} }}
+| ~> :: :: leadsto {{ tex \leadsto }}
+| --> :: :: lra {{ tex \longrightarrow }}
+| !! :: :: downarrow {{ tex \Downarrow }}
+| #elipses :: :: eplises {{ tex \cdots }}
+| #empty :: :: empty {{ tex \epsilon }}
+
+formula :: 'formula_' ::=
+ | judgement :: :: judgement
+ | G ( p ) =  NodeData :: :: graphGetNodeData
+ | G ( p ) =  EdgeData :: :: graphGetEdgeData
+ | v1 = v2 :: :: equal
+ | v1 /= v2 :: :: notEqual
+ | G1 = G2 :: :: graphEqual
+ | \\ :: :: newLine {{ tex \\ }}
+
+s :: 's_' ::= {{ com Symbols. }}
+ | literal :: :: literal {{ tex \cdots }} {{ com Literal number, or symbol. }}
+ | s1 - s2 :: :: dash {{ com Dash binary from. }}
+ | s1 . s2 :: :: dot {{ com Dot binary. }}
+ | s1 ( s2 ) :: :: app {{ com App binary form. }}
+
+cell :: 'cell_' ::= {{ com Cells. }}
+ | NonThunk v :: :: NonThunk {{ com Non-thunk. }} {{ tex [[v]] }}
+ | Thunk ( Space , e , ValueOption ) :: :: Thunk {{ com Thunk. }} {{ tex ([[Space]], [[e]], [[ValueOption]]) }}
+
+Store {{ tex \sigma }} :: 'Store_' ::= {{ com Stores. }}
+ | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
+ | p |-> cell :: :: cell {{ com Cell. }}
+ | Store1 , Store2 :: :: union {{ com Disjoint union. }}
+
+v :: 'v_' ::= {{ com Values. }}
+ | \ x . e :: :: lambda {{ com Lambda. }}
+ | x :: :: var {{ com Variable. }}
+ | thunk { e } :: :: thunk {{ com Thunk. }}
+ | sym s :: :: symbol {{ com Symbol. }}
+ | ptr s :: :: pointer {{ com Pointer. }}
+
+ValueOption {{ tex \dot{v} }} :: 'ValueOption_' ::= {{ com Optional value. }}
+ | empty :: :: empty {{ tex \bullet }} {{ com None. }}
+ | v :: :: value {{ com Some value. }}
+
+p :: 'p_' ::= {{ com Pointers. }}
+ | ( s , Moment ) :: :: pointer {{ com Pointer (symbol $[[s]]$, moment $[[Moment]]$). }}
+
+Space {{ tex \varsigma }} :: 'Space_' ::= {{ com Spaces. }}
+ | here :: :: here {{ com Here. }}
+ | here ( s ) :: :: fractal {{ com Fractal aspect of Here. }}
+
+Moment {{ tex \psi }} :: 'Moment_' ::= {{ com Moments. }}
+ | now :: :: now {{ com Now. }}
+ | now ( s ) :: :: fractal {{ com Fractal aspect of Now. }}
+
+Path {{ tex \pi }} :: 'Path_' ::= {{ com Paths. }}
+ | empty :: :: empty {{ com Empty. }}
+ | Path , p :: :: pointer {{ com Pointer. }}
+
+e :: 'e_' ::= {{ com Expressions. }}
+ | thunk ( e ) :: :: thunk {{ com Thunk. }}
+ | do C ( e1 ) { e2 } :: :: do {{ com Do. }}
+ | put ( e1 , e2 , e3 ) :: :: putThree {{ com Put (fully-qualified). }}
+ | put ( e1 , e2 ) :: :: putTwo {{ com Put (into current moment). }}
+ | get ( e ) :: :: get {{ com Get. }}
+ | force ( e ) :: :: force {{ com Force. }}
+
+ | let x = e1 in e2 :: :: let {{ com Let sequencing. }}
+ | let x = e1 in :: M :: letHead
+ | e1 ( e2 ) :: :: apply {{ com Application. }}
+ | e1 - e2 :: :: symbolDash {{ com Minus binop. }}
+ | e1 . e2 :: :: symbolDot {{ com Dot binop. }}
+ | [ v / x ] e :: M :: subst {{ com Substituion. }}
+ | v :: :: value {{ com Value. }}
+ | ( e ) :: M :: paren {{ com Paren. }}
+
+
+C :: 'C_' ::= {{ com Do context. }}
+ | ContextVerb ContextDim :: :: context {{ com Verb and dimension. }}
+
+ContextVerb :: 'ContextVerb_' ::= {{ com Context verb. }}
+ | within :: :: within {{ com Within. }}
+ | goto :: :: goto {{ com Goto. }}
+
+ContextDim :: 'ContextDim_' ::= {{ com Context dimension. }}
+ | space :: :: space {{ com Space dimension. }}
+ | time :: :: time {{ com Time dimension. }}
+
+
+defns ReferenceSemantics :: '' ::=
+
+defn
+Store1 ; Path ; Moment ; Space |- e !! Store2 ; v
+:: :: eval :: 'E_'
+{{ tex [[Store1]] ; [[Path]] \vdash^[[Space]]_[[Moment]] e \Downarrow [[Store2]] ; [[v]] }}
+by
+
+
+defn
+Store1 <= Store2
+:: :: aligned :: 'A_'
+{{ tex [[Store1]] \leq [[Store2]] }}
+by
+
+
+---------------- :: empty
+empty <= Store
+
+
+Store1 <= Store3
+Store2 <= Store4
+----------------------------------- :: binary
+Store1 , Store2 <= Store3 , Store4
+
+
+-------------------------- :: cell
+p |-> cell <= p |-> cell
+
+---------------------------------------------------- :: cache
+p |-> Thunk(Space,e,empty) <= p |-> Thunk(Space,e,v)

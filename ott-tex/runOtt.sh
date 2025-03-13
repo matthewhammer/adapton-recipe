@@ -2,6 +2,9 @@
 
 set -e
 
+# FORMALISM=formalism.ott
+FORMALISM=adapton-recipe.ott
+
 ott \
     -merge true \
     -show_sort true \
@@ -9,7 +12,7 @@ ott \
     -tex_wrap true \
     -tex_show_meta false \
     -tex_show_categories false \
-    -i formalism.ott \
+    -i $FORMALISM \
     -o formalism.tex \
 
 ott \
@@ -17,12 +20,12 @@ ott \
     -tex_wrap false \
     -tex_show_meta false \
     -tex_show_categories false \
-    -i formalism.ott \
+    -i $FORMALISM \
     -o formalism-commands.tex \
 
 ott \
     -tex_wrap true \
-    -i formalism.ott \
+    -i $FORMALISM \
     -tex_filter overview.mng overview.tex
 
 pdflatex formalism.tex || echo Expect manual intervention here, sometimes.

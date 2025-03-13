@@ -13,41 +13,41 @@ metavar x , y , z ::=
 grammar
 
 terminals :: 'terminals_' ::=
-| == :: :: equiv {{ tex \equiv }}
-| /= :: :: noteq {{ tex  \neq }}
-| forall :: :: forall {{ tex \forall }}
-| exists :: :: exists {{ tex \exists }}
-| %% :: :: apart {{ tex \otriangleup }}
-| \ :: :: lambda {{ tex \lambda }}
 | |-> :: :: mapsto {{ tex \mapsto }}
-| -> :: :: rightarrow {{ tex \texttt{->} }}
-| => :: :: thickrightarrow {{ tex \texttt{=>} }}
-| := :: :: defineOrAssign {{ tex \mathrel{\texttt:\texttt=} }}
-| * :: :: cdot {{ tex \texttt{*} }}
-| ^* :: :: stepStar {{ tex \texttt{\^{}*} }}
-| +* :: :: plusStar {{ tex \texttt{+*} }}
-| & :: :: amp {{ tex \texttt{\&} }}
-| ! :: :: bang {{ tex \texttt{!} }}
-| @ :: :: at {{ tex \texttt{@} }}
-| >> :: :: mapOp {{ tex \texttt{>>} }}
-| % :: :: projectOp {{ tex \texttt{\%} }}
-| ~ :: :: tilde {{ tex \texttt{\textasciitilde} }} {{ com Text ascii tilde. }}
-| |- :: :: vdash {{ tex \vdash }}
-| ;; :: :: dsemi {{ tex {~|~} }}
-| ~> :: :: leadsto {{ tex \leadsto }}
-| --> :: :: lra {{ tex \longrightarrow }}
-| !! :: :: downarrow {{ tex \Downarrow }}
-| #elipses :: :: eplises {{ tex \cdots }}
-| #empty :: :: empty {{ tex \epsilon }}
+| \ :: :: lambda {{ tex \lambda }}
+
+% | == :: :: equiv {{ tex \equiv }}
+% | /= :: :: noteq {{ tex  \neq }}
+% | forall :: :: forall {{ tex \forall }}
+% | exists :: :: exists {{ tex \exists }}
+% | %% :: :: apart {{ tex \otriangleup }}
+% | -> :: :: rightarrow {{ tex \texttt{->} }}
+% | => :: :: thickrightarrow {{ tex \texttt{=>} }}
+% | := :: :: defineOrAssign {{ tex \mathrel{\texttt:\texttt=} }}
+% | * :: :: cdot {{ tex \texttt{*} }}
+% | ^* :: :: stepStar {{ tex \texttt{\^{}*} }}
+% | +* :: :: plusStar {{ tex \texttt{+*} }}
+% | & :: :: amp {{ tex \texttt{\&} }}
+% | ! :: :: bang {{ tex \texttt{!} }}
+% | @ :: :: at {{ tex \texttt{@} }}
+% | >> :: :: mapOp {{ tex \texttt{>>} }}
+% | % :: :: projectOp {{ tex \texttt{\%} }}
+% | ~ :: :: tilde {{ tex \texttt{\textasciitilde} }} {{ com Text ascii tilde. }}
+% | |- :: :: vdash {{ tex \vdash }}
+% | ;; :: :: dsemi {{ tex {~|~} }}
+% | ~> :: :: leadsto {{ tex \leadsto }}
+% | --> :: :: lra {{ tex \longrightarrow }}
+% | !! :: :: downarrow {{ tex \Downarrow }}
+% | #elipses :: :: eplises {{ tex \cdots }}
+% | #empty :: :: empty {{ tex \epsilon }}
 
 formula :: 'formula_' ::=
  | judgement :: :: judgement
- | G ( p ) =  NodeData :: :: graphGetNodeData
- | G ( p ) =  EdgeData :: :: graphGetEdgeData
+ | Store ( p ) =  cell :: :: graphGetCell
  | v1 = v2 :: :: equal
  | v1 /= v2 :: :: notEqual
- | G1 = G2 :: :: graphEqual
- | \\ :: :: newLine {{ tex \\ }}
+ | formula1 \/ formula2 :: :: and {{ tex [[formula1]] \bigvee [[formula2]] }}
+ | ( formula ) :: :: formula {{ tex \left([[formula]]\right) }}
 
 s :: 's_' ::= {{ com Symbols. }}
  | literal :: :: literal {{ tex \cdots }} {{ com Literal number, or symbol. }}
@@ -57,34 +57,42 @@ s :: 's_' ::= {{ com Symbols. }}
 
 cell :: 'cell_' ::= {{ com Cells. }}
  | NonThunk v :: :: NonThunk {{ com Non-thunk. }} {{ tex [[v]] }}
- | Thunk ( Space , e , ValueOption ) :: :: Thunk {{ com Thunk. }} {{ tex ([[Space]], [[e]], [[ValueOption]]) }}
+ | Thunk ( e , StoreValueOption ) :: :: Thunk {{ com Thunk. }} {{ tex ([[e]], [[StoreValueOption]]) }}
 
 Store {{ tex \sigma }} :: 'Store_' ::= {{ com Stores. }}
  | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
- | p |-> cell :: :: cell {{ com Cell. }}
+ | pp |-> cell :: :: cell {{ com Cell. }}
  | Store1 , Store2 :: :: union {{ com Disjoint union. }}
+ | Store { pp |-> cell } :: M :: update {{ com Cell update. }}
 
 v :: 'v_' ::= {{ com Values. }}
  | \ x . e :: :: lambda {{ com Lambda. }}
  | x :: :: var {{ com Variable. }}
- | thunk { e } :: :: thunk {{ com Thunk. }}
+ | thunk ( e ) :: :: thunk {{ com Thunk. }}
  | sym s :: :: symbol {{ com Symbol. }}
- | ptr s :: :: pointer {{ com Pointer. }}
+ | ptr p :: :: pointer {{ com Pointer. }}
+ | sp Space :: :: space {{ com Space. }}
+ | mt Moment :: :: moment {{ com Moment. }}
 
-ValueOption {{ tex \dot{v} }} :: 'ValueOption_' ::= {{ com Optional value. }}
+StoreValueOption {{ tex \dot{v} }} :: 'StoreValueOption_' ::= {{ com Optional value. }}
  | empty :: :: empty {{ tex \bullet }} {{ com None. }}
- | v :: :: value {{ com Some value. }}
+ | ( Store , v ) :: :: value {{ com Some store~$[[Store]]$ and value~$[[v]]$. }}
 
-p :: 'p_' ::= {{ com Pointers. }}
- | ( s , Moment ) :: :: pointer {{ com Pointer (symbol $[[s]]$, moment $[[Moment]]$). }}
+p :: 'p_' ::= {{ com Pointers (spatial component only). }}
+ | Space :: :: pointer {{ com Space $[[Space]]$. }}
+
+pp {{ tex \tilde{p} }} :: 'pp_' ::= {{ com Full pointers. }}
+ | ( Space , Moment ) :: :: pointer {{ com Space $[[Space]]$ and moment $[[Moment]]$. }}
 
 Space {{ tex \varsigma }} :: 'Space_' ::= {{ com Spaces. }}
  | here :: :: here {{ com Here. }}
  | here ( s ) :: :: fractal {{ com Fractal aspect of Here. }}
+ | subSpace ( Space , s ) :: M :: subSpace
 
 Moment {{ tex \psi }} :: 'Moment_' ::= {{ com Moments. }}
  | now :: :: now {{ com Now. }}
  | now ( s ) :: :: fractal {{ com Fractal aspect of Now. }}
+ | subMoment ( Moment , s ) :: M :: subMoment
 
 Path {{ tex \pi }} :: 'Path_' ::= {{ com Paths. }}
  | empty :: :: empty {{ com Empty. }}
@@ -117,7 +125,7 @@ ContextVerb :: 'ContextVerb_' ::= {{ com Context verb. }}
 
 ContextDim :: 'ContextDim_' ::= {{ com Context dimension. }}
  | space :: :: space {{ com Space dimension. }}
- | time :: :: time {{ com Time dimension. }}
+ | moment :: :: moment {{ com Time dimension. }}
 
 
 defns ReferenceSemantics :: '' ::=
@@ -125,9 +133,82 @@ defns ReferenceSemantics :: '' ::=
 defn
 Store1 ; Path ; Moment ; Space |- e !! Store2 ; v
 :: :: eval :: 'E_'
-{{ tex [[Store1]] ; [[Path]] \vdash^[[Space]]_[[Moment]] e \Downarrow [[Store2]] ; [[v]] }}
+{{ tex [[Store1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]]} [[e]] \Downarrow [[Store2]] ; [[v]] }}
 by
 
+----------------------------------------------------------------------------------------- :: thunk
+Store ; Path ; Moment ; Space |- thunk(e) !! Store ; thunk(do goto space(sp Space){ e })
+
+Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; thunk(e2)
+Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
+------------------------------------------------------------ :: forceThunk
+Store1 ; Path ; Moment ; Space |- force(e1) !! Store3 ; v
+
+
+
+------------------------------------------------------- :: sym
+Store ; Path ; Moment ; Space |- sym s !! Store ; sym s
+
+
+Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
+Store2 ; Path ; Moment ; subSpace(Space, s) |- e2 !! Store3 ; v
+--------------------------------------------------------------------------- :: withinSpace
+Store1 ; Path ; Moment ; Space |- do within space(e1) { e2 } !! Store3 ; v
+
+Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
+Store2 ; Path ; subMoment(Moment, s) ; Space |- e2 !! Store3 ; v
+--------------------------------------------------------------------------- :: withinMoment
+Store1 ; Path ; Moment ; Space |- do within moment(e1) { e2 } !! Store3 ; v
+
+Store1 ; Path ; Moment ; Space1 |- e1 !! Store2 ; sp Space2
+Store2 ; Path ; Moment ; Space2 |- e2 !! Store3 ; v
+--------------------------------------------------------------------------- :: gotoSpace
+Store1 ; Path ; Moment ; Space1 |- do goto space(e1) { e2 } !! Store3 ; v
+
+Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; mt Moment2
+Store2 ; Path ; Moment2 ; Space |- e2 !! Store3 ; v
+--------------------------------------------------------------------------- :: gotoMoment
+Store1 ; Path ; Moment ; Space |- do goto moment(e1) { e2 } !! Store3 ; v
+
+
+Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr p
+Store2(p) = NonThunk v
+-------------------------------------------------------------------- :: getNonThunk
+Store1 ; Path ; Moment ; Space |- get(e) !! Store2 ; v
+
+Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr p
+Store2(p) = Thunk(e0, StoreValueOption)
+--------------------------------------------------------------- :: getThunk
+Store1 ; Path ; Moment ; Space |- get(e) !! Store2 ; thunk(e0)
+
+
+
+Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr Space0
+Store2(Space0) = Thunk(e0, empty)
+Store2 ; Path ; Moment ; Space |- e0 !! Store3 ; v
+----------------------------------------------------------------------------------------- :: forceEmpty
+Store1 ; Path ; Moment ; Space |- force(e) !! Store3{ (Space0, Moment) |-> Thunk(e0, (Store2, v)) } ; v
+
+Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr p
+Store2(p) = Thunk(e0, (Store0, v))
+Store0 <= Store2
+--------------------------------------------------------- :: forceHit
+Store1 ; Path ; Moment ; Space |- force(e) !! Store2 ; v
+
+Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr Space0
+Store2(Space0) = Thunk(e0, (Store0, v0))
+Store0 </= Store2
+Store2 ; Path ; Moment ; Space |- e0 !! Store3 ; v
+---------------------------------------------------------------------------------------- :: forceMiss
+Store1 ; Path ; Moment ; Space |- force(e) !! Store3{ (Space0, Moment) |-> Thunk(e0, (Store2, v)) } ; v
+
+
+
+defn
+Store1 </= Store2
+:: :: notAligned :: 'NA_'
+{{ tex [[Store1]] \not\leq [[Store2]] }}
+by
 
 defn
 Store1 <= Store2
@@ -147,7 +228,7 @@ Store1 , Store2 <= Store3 , Store4
 
 
 -------------------------- :: cell
-p |-> cell <= p |-> cell
+pp |-> cell <= pp |-> cell
 
 ---------------------------------------------------- :: cache
-p |-> Thunk(Space,e,empty) <= p |-> Thunk(Space,e,v)
+pp |-> Thunk(e,empty) <= pp |-> Thunk(e,(Store,v))

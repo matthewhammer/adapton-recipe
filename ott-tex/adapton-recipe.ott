@@ -3,6 +3,7 @@ embed {{ tex-preamble
 %\usepackage{euler}
 \usepackage{inconsolata}
 \usepackage{mathabx} % for otriangleup
+\usepackage{MnSymbol} % for cupdot
 \usepackage{xcolor}
 \usepackage{makecell}
 }}
@@ -14,10 +15,13 @@ grammar
 
 terminals :: 'terminals_' ::=
 | |-> :: :: mapsto {{ tex \mapsto }}
+| |/-> :: :: notmapsto {{ tex \not\mapsto }}
 | \ :: :: lambda {{ tex \lambda }}
+| !! :: :: downarrow {{ tex \Downarrow }}
+| |- :: :: vdash {{ tex \vdash }}
+| != :: :: noteq {{ tex  \neq }}
 
 % | == :: :: equiv {{ tex \equiv }}
-% | /= :: :: noteq {{ tex  \neq }}
 % | forall :: :: forall {{ tex \forall }}
 % | exists :: :: exists {{ tex \exists }}
 % | %% :: :: apart {{ tex \otriangleup }}
@@ -33,19 +37,22 @@ terminals :: 'terminals_' ::=
 % | >> :: :: mapOp {{ tex \texttt{>>} }}
 % | % :: :: projectOp {{ tex \texttt{\%} }}
 % | ~ :: :: tilde {{ tex \texttt{\textasciitilde} }} {{ com Text ascii tilde. }}
-% | |- :: :: vdash {{ tex \vdash }}
 % | ;; :: :: dsemi {{ tex {~|~} }}
 % | ~> :: :: leadsto {{ tex \leadsto }}
 % | --> :: :: lra {{ tex \longrightarrow }}
-% | !! :: :: downarrow {{ tex \Downarrow }}
 % | #elipses :: :: eplises {{ tex \cdots }}
 % | #empty :: :: empty {{ tex \epsilon }}
 
 formula :: 'formula_' ::=
  | judgement :: :: judgement
- | Store ( p ) =  cell :: :: graphGetCell
+ | Store ( pp ) =  cell :: :: graphGetCell
  | v1 = v2 :: :: equal
  | v1 /= v2 :: :: notEqual
+ | Space1 = Space2 :: :: spaceEqual
+ | Moment1 = Moment2 :: :: momentEqual
+ | Moment1 != Moment2 :: :: momentNotEqual
+ | pp1 = pp2 :: :: fullPointerEqual
+ | pp \notin Path :: :: pointerNotInPath {{ tex [[pp]] \not\in [[Path]] }}
  | formula1 \/ formula2 :: :: and {{ tex [[formula1]] \bigvee [[formula2]] }}
  | ( formula ) :: :: formula {{ tex \left([[formula]]\right) }}
 
@@ -55,15 +62,41 @@ s :: 's_' ::= {{ com Symbols. }}
  | s1 . s2 :: :: dot {{ com Dot binary. }}
  | s1 ( s2 ) :: :: app {{ com App binary form. }}
 
-cell :: 'cell_' ::= {{ com Cells. }}
+cell {{ tex c }} :: 'cell_' ::= {{ com Cells. }}
  | NonThunk v :: :: NonThunk {{ com Non-thunk. }} {{ tex [[v]] }}
- | Thunk ( e , StoreValueOption ) :: :: Thunk {{ com Thunk. }} {{ tex ([[e]], [[StoreValueOption]]) }}
+ | Thunk ( e , StoreValueOption ) :: :: Thunk {{ com Thunk. }} {{ tex \left<[[e]], [[StoreValueOption]]\right> }}
 
 Store {{ tex \sigma }} :: 'Store_' ::= {{ com Stores. }}
  | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
  | pp |-> cell :: :: cell {{ com Cell. }}
- | Store1 , Store2 :: :: union {{ com Disjoint union. }}
- | Store { pp |-> cell } :: M :: update {{ com Cell update. }}
+ | Store1 , Store2 :: :: union {{ com Disjoint union. }} {{ tex [[Store1]] \cupdot [[Store2]] }}
+ | Store { pp |-> cell } :: M :: updateCell {{ com Cell update. }}
+ | Store { pp |-> v } :: M :: updateValue {{ com Defined as two cases, on $[[v]]$. }}
+ | Store { pp |/-> } :: M :: removePointer {{ com Remove cell at pointer $[[pp]]$. }}
+
+StoreValueOption {{ tex \dot{v} }} :: 'StoreValueOption_' ::= {{ com Optional thunk cache (store and value). }}
+ | empty :: :: empty {{ tex \bullet }} {{ com None. }}
+ | ( Store , v ) :: :: value {{ com Some store~$[[Store]]$ and value~$[[v]]$. }} {{ tex \left<[[Store]], [[v]]\right> }}
+
+p :: 'p_' ::= {{ com Pointers (spatial component only). }}
+ | Space :: :: pointer {{ com Space $[[Space]]$. }}
+
+pp {{ tex \tilde{p} }} :: 'pp_' ::= {{ com Full pointers. }}
+ | ( Space , Moment ) ^ d :: :: pointer {{ tex \left<[[Space]],[[Moment]]\right>^{[[d]]} }} {{ com Space $[[Space]]$ and moment $[[Moment]]$, dimension order~$[[d]]$. }}
+
+d :: 'd_' ::= {{ com Dimension order. }}
+ | st :: :: st {{ com Space, time. }}
+ | ts :: :: ts {{ com Time, space. }}
+
+Space {{ tex \varsigma }} :: 'Space_' ::= {{ com Spaces. }}
+ | here :: :: here {{ com Here. }}
+ | here ( s ) :: :: fractal {{ com Fractal aspect of Here. }}
+ | subSpace ( Space , s ) :: M :: subSpace  {{ tex [[Space]]([[s]]) }} {{ com Subspace $[[s]]$ of space $[[Space]]$. }}
+
+Moment {{ tex \psi }} :: 'Moment_' ::= {{ com Moments. }}
+ | now :: :: now {{ com Now. }}
+ | now ( s ) :: :: fractal {{ com Fractal aspect of Now. }}
+ | subMoment ( Moment , s ) :: M :: subMoment {{ tex [[Moment]]([[s]]) }} {{ com Submoment $[[s]]$ of moment $[[Moment]]$. }}
 
 v :: 'v_' ::= {{ com Values. }}
  | \ x . e :: :: lambda {{ com Lambda. }}
@@ -74,31 +107,9 @@ v :: 'v_' ::= {{ com Values. }}
  | sp Space :: :: space {{ com Space. }}
  | mt Moment :: :: moment {{ com Moment. }}
 
-StoreValueOption {{ tex \dot{v} }} :: 'StoreValueOption_' ::= {{ com Optional value. }}
- | empty :: :: empty {{ tex \bullet }} {{ com None. }}
- | ( Store , v ) :: :: value {{ com Some store~$[[Store]]$ and value~$[[v]]$. }}
-
-p :: 'p_' ::= {{ com Pointers (spatial component only). }}
- | Space :: :: pointer {{ com Space $[[Space]]$. }}
-
-pp {{ tex \tilde{p} }} :: 'pp_' ::= {{ com Full pointers. }}
- | ( Space , Moment ) :: :: pointer {{ com Space $[[Space]]$ and moment $[[Moment]]$. }}
-
-Space {{ tex \varsigma }} :: 'Space_' ::= {{ com Spaces. }}
- | here :: :: here {{ com Here. }}
- | here ( s ) :: :: fractal {{ com Fractal aspect of Here. }}
- | subSpace ( Space , s ) :: M :: subSpace
-
-Moment {{ tex \psi }} :: 'Moment_' ::= {{ com Moments. }}
- | now :: :: now {{ com Now. }}
- | now ( s ) :: :: fractal {{ com Fractal aspect of Now. }}
- | subMoment ( Moment , s ) :: M :: subMoment
-
-Path {{ tex \pi }} :: 'Path_' ::= {{ com Paths. }}
- | empty :: :: empty {{ com Empty. }}
- | Path , p :: :: pointer {{ com Pointer. }}
-
 e :: 'e_' ::= {{ com Expressions. }}
+ | here ( ) :: :: here {{ com Here. }}
+ | now ( ) :: :: now {{ com Now. }}
  | thunk ( e ) :: :: thunk {{ com Thunk. }}
  | do C ( e1 ) { e2 } :: :: do {{ com Do. }}
  | put ( e1 , e2 , e3 ) :: :: putThree {{ com Put (fully-qualified). }}
@@ -128,6 +139,11 @@ ContextDim :: 'ContextDim_' ::= {{ com Context dimension. }}
  | moment :: :: moment {{ com Time dimension. }}
 
 
+Path {{ tex \pi }} :: 'Path_' ::= {{ com Paths. }}
+ | empty :: :: empty {{ com Empty. }}
+ | Path , p :: :: pointer {{ com Pointer. }}
+
+
 defns ReferenceSemantics :: '' ::=
 
 defn
@@ -135,6 +151,13 @@ Store1 ; Path ; Moment ; Space |- e !! Store2 ; v
 :: :: eval :: 'E_'
 {{ tex [[Store1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]]} [[e]] \Downarrow [[Store2]] ; [[v]] }}
 by
+
+----------------------------------------------------------------------------------------- :: here
+Store ; Path ; Moment ; Space |- here() !! Store ; sp Space
+
+----------------------------------------------------------------------------------------- :: now
+Store ; Path ; Moment ; Space |- now() !! Store ; mt Moment
+
 
 ----------------------------------------------------------------------------------------- :: thunk
 Store ; Path ; Moment ; Space |- thunk(e) !! Store ; thunk(do goto space(sp Space){ e })
@@ -155,54 +178,91 @@ Store2 ; Path ; Moment ; subSpace(Space, s) |- e2 !! Store3 ; v
 --------------------------------------------------------------------------- :: withinSpace
 Store1 ; Path ; Moment ; Space |- do within space(e1) { e2 } !! Store3 ; v
 
-Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
-Store2 ; Path ; subMoment(Moment, s) ; Space |- e2 !! Store3 ; v
---------------------------------------------------------------------------- :: withinMoment
-Store1 ; Path ; Moment ; Space |- do within moment(e1) { e2 } !! Store3 ; v
-
 Store1 ; Path ; Moment ; Space1 |- e1 !! Store2 ; sp Space2
 Store2 ; Path ; Moment ; Space2 |- e2 !! Store3 ; v
 --------------------------------------------------------------------------- :: gotoSpace
 Store1 ; Path ; Moment ; Space1 |- do goto space(e1) { e2 } !! Store3 ; v
 
+Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
+Store2 |- undelay(Store2, subMoment(Moment, s)) !! Store3
+Store3 ; Path ; subMoment(Moment, s) ; Space |- e2 !! Store4 ; v
+--------------------------------------------------------------------------- :: withinMoment
+Store1 ; Path ; Moment ; Space |- do within moment(e1) { e2 } !! Store4 ; v
+
 Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; mt Moment2
-Store2 ; Path ; Moment2 ; Space |- e2 !! Store3 ; v
+Store2 |- undelay(Store2, Moment2) !! Store3
+Store3 ; Path ; Moment2 ; Space |- e2 !! Store4 ; v
 --------------------------------------------------------------------------- :: gotoMoment
-Store1 ; Path ; Moment ; Space |- do goto moment(e1) { e2 } !! Store3 ; v
+Store1 ; Path ; Moment ; Space |- do goto moment(e1) { e2 } !! Store4 ; v
 
 
-Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr p
-Store2(p) = NonThunk v
+Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
+Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
+(subSpace(Space, s), Moment)^st \notin Path
+---------------------------------------------------------------------------------------------------------------- :: putNow
+Store1 ; Path ; Moment ; Space |- put (e1, e2) !! Store3{ (subSpace(Space, s), Moment)^st |-> v } ; ptr subSpace(Space,s)
+
+
+--------------------------------------------------------------------------------- :: putDelay
+Store ; Path ; Moment ; Space1 |- put (e1, e2) !! Store{ pp |-> v } ; ptr Space2
+
+
+Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space2
+Store2((Space2, Moment)^st) = NonThunk v
 -------------------------------------------------------------------- :: getNonThunk
-Store1 ; Path ; Moment ; Space |- get(e) !! Store2 ; v
+Store1 ; Path ; Moment ; Space1 |- get(e) !! Store2 ; v
 
-Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr p
-Store2(p) = Thunk(e0, StoreValueOption)
+Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space2
+Store2((Space2, Moment)^st) = Thunk(e0, StoreValueOption)
 --------------------------------------------------------------- :: getThunk
-Store1 ; Path ; Moment ; Space |- get(e) !! Store2 ; thunk(e0)
+Store1 ; Path ; Moment ; Space1 |- get(e) !! Store2 ; thunk(e0)
 
 
 
-Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr Space0
-Store2(Space0) = Thunk(e0, empty)
-Store2 ; Path ; Moment ; Space |- e0 !! Store3 ; v
+Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
+Store2((Space0, Moment)^st) = Thunk(e0, empty)
+Store2 ; Path ; Moment ; Space1 |- e0 !! Store3 ; v
 ----------------------------------------------------------------------------------------- :: forceEmpty
-Store1 ; Path ; Moment ; Space |- force(e) !! Store3{ (Space0, Moment) |-> Thunk(e0, (Store2, v)) } ; v
+Store1 ; Path ; Moment ; Space1 |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(e0, (Store2, v)) } ; v
 
-Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr p
-Store2(p) = Thunk(e0, (Store0, v))
+Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
+Store2((Space0, Moment)^st) = Thunk(e0, (Store0, v))
 Store0 <= Store2
 --------------------------------------------------------- :: forceHit
-Store1 ; Path ; Moment ; Space |- force(e) !! Store2 ; v
+Store1 ; Path ; Moment ; Space1 |- force(e) !! Store2 ; v
 
 Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr Space0
-Store2(Space0) = Thunk(e0, (Store0, v0))
+Store2((Space0, Moment)^st) = Thunk(e0, (Store0, v0))
 Store0 </= Store2
 Store2 ; Path ; Moment ; Space |- e0 !! Store3 ; v
 ---------------------------------------------------------------------------------------- :: forceMiss
-Store1 ; Path ; Moment ; Space |- force(e) !! Store3{ (Space0, Moment) |-> Thunk(e0, (Store2, v)) } ; v
+Store1 ; Path ; Moment ; Space |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(e0, (Store2, v)) } ; v
 
 
+defn
+Store1 |- undelay ( Store2 , Moment ) !! Store3
+:: :: undelay :: 'undelay_'
+by
+
+
+----------------------------------- :: empty
+Store |- undelay (empty, Moment) !! Store
+
+
+Store |- undelay (Store1, Moment) !! Store'
+Store' |- undelay (Store2, Moment) !! Store''
+--------------------------------------------- :: binary
+Store |- undelay (Store1, Store2, Moment) !! Store''
+
+----------------------------------------------------------------------------------------------------- :: moment
+Store |- undelay( (Space, Moment)^ts |-> cell, Moment ) !! Store{ (Space, Moment)^ts |/-> }{(Space, Moment)^st |-> cell }
+
+Moment1 != Moment2
+----------------------------------------------------------------------------------------------------- :: skipMoment
+Store |- undelay( (Space, Moment1)^ts |-> cell, Moment2 ) !! Store
+
+----------------------------------------------------------------------------------------------------- :: skipSpace
+Store |- undelay( (Space, Moment1)^st |-> cell, Moment2 ) !! Store
 
 defn
 Store1 </= Store2

@@ -203,8 +203,11 @@ Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
 Store1 ; Path ; Moment ; Space |- put (e1, e2) !! Store3{ (subSpace(Space, s), Moment)^st |-> v } ; ptr subSpace(Space,s)
 
 
---------------------------------------------------------------------------------- :: putDelay
-Store ; Path ; Moment ; Space1 |- put (e1, e2) !! Store{ pp |-> v } ; ptr Space2
+Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; sym s
+Store2 ; Path ; Moment1 ; Space |- e2 !! Store3 ; v
+Store3 ; Path ; Moment1 ; Space |- e2 !! Store4 ; mt Moment2
+--------------------------------------------------------------------------------------------------------------- :: putDelay
+Store ; Path ; Moment1 ; Space |- put (e1, e2) !! Store4{ (subSpace(Space, s), Moment2)^ts |-> v } ; ptr subSpace(Space,s)
 
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space2

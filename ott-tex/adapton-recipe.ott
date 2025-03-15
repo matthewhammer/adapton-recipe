@@ -140,8 +140,8 @@ ContextDim :: 'ContextDim_' ::= {{ com Context dimension. }}
 
 
 Path {{ tex \pi }} :: 'Path_' ::= {{ com Paths. }}
- | empty :: :: empty {{ com Empty. }}
- | Path , p :: :: pointer {{ com Pointer. }}
+ | empty :: :: empty {{ tex \cdot }} {{ com Empty (no evaluating thunk pointers). }}
+ | Path , pp :: :: pointer {{ com Thunk pointer~$[[pp]]$ evaluating at~$[[Path]]$. }}
 
 
 defns ReferenceSemantics :: '' ::=
@@ -224,7 +224,7 @@ Store1 ; Path ; Moment ; Space1 |- get(e) !! Store2 ; thunk(e0)
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
 Store2((Space0, Moment)^st) = Thunk(e0, empty)
-Store2 ; Path ; Moment ; Space1 |- e0 !! Store3 ; v
+Store2 ; Path, (Space0, Moment)^st ; Moment ; Space1 |- e0 !! Store3 ; v
 ----------------------------------------------------------------------------------------- :: forceEmpty
 Store1 ; Path ; Moment ; Space1 |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(e0, (Store2, v)) } ; v
 
@@ -237,7 +237,7 @@ Store1 ; Path ; Moment ; Space1 |- force(e) !! Store2 ; v
 Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr Space0
 Store2((Space0, Moment)^st) = Thunk(e0, (Store0, v0))
 Store0 </= Store2
-Store2 ; Path ; Moment ; Space |- e0 !! Store3 ; v
+Store2 ; Path, (Space0, Moment)^st ; Moment ; Space |- e0 !! Store3 ; v
 ---------------------------------------------------------------------------------------- :: forceMiss
 Store1 ; Path ; Moment ; Space |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(e0, (Store2, v)) } ; v
 

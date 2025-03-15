@@ -81,7 +81,7 @@ StoreValueOption {{ tex \dot{v} }} :: 'StoreValueOption_' ::= {{ com Optional th
 p :: 'p_' ::= {{ com Pointers (spatial component only). }}
  | Space :: :: pointer {{ com Space $[[Space]]$. }}
 
-pp {{ tex \tilde{p} }} :: 'pp_' ::= {{ com Full pointers. }}
+pp {{ tex \tilde{p} }}, qq {{ tex \tilde{q} }} :: 'pp_' ::= {{ com Full pointers. }}
  | ( Space , Moment ) ^ d :: :: pointer {{ tex \left<[[Space]],[[Moment]]\right>^{[[d]]} }} {{ com Space $[[Space]]$ and moment $[[Moment]]$, dimension order~$[[d]]$. }}
 
 d :: 'd_' ::= {{ com Dimension order. }}
@@ -128,13 +128,13 @@ e :: 'e_' ::= {{ com Expressions. }}
 
 
 C :: 'C_' ::= {{ com Do context. }}
- | ContextVerb ContextDim :: :: context {{ com Verb and dimension. }}
+ | CxtVerb CxtDim :: :: context {{ com Verb and dimension. }}
 
-ContextVerb :: 'ContextVerb_' ::= {{ com Context verb. }}
+CxtVerb :: 'ContextVerb_' ::= {{ com Context verb. }}
  | within :: :: within {{ com Within. }}
  | goto :: :: goto {{ com Goto. }}
 
-ContextDim :: 'ContextDim_' ::= {{ com Context dimension. }}
+CxtDim :: 'ContextDim_' ::= {{ com Context dimension. }}
  | space :: :: space {{ com Space dimension. }}
  | moment :: :: moment {{ com Time dimension. }}
 
@@ -144,7 +144,27 @@ Path {{ tex \pi }} :: 'Path_' ::= {{ com Paths. }}
  | Path , pp :: :: pointer {{ com Thunk pointer~$[[pp]]$ evaluating at~$[[Path]]$. }}
 
 
-defns ReferenceSemantics :: '' ::=
+%----------------------------
+
+Inc :: '' ::= {{ com \textbf{Incremental Graph Semantics} (below) }}
+|  :: :: 'Inc' {{ tex --- }}
+
+%----------------------------
+
+m :: 'm_' ::= {{ com Meta-moments, as tagged natural numbers. }}
+n :: 'n_' ::= {{ com Edge identifers, as tagged natural numbers. }}
+
+ppp {{ tex \dot{\tilde{p} } }} , qqq {{ tex \dot{\tilde{q} } }} :: 'ppp_' ::= {{ com Graph-node pointers. }}
+ | ( pp , m ) :: :: pointer {{ com Full pointer~$[[pp]]$ at meta-moment~$[[m]]$ }}
+
+t :: 't_' ::= {{ com Local traces. A list of edge identifiers. }}
+
+Graph {{ tex G }} :: 'Graph_' ::= {{ com Graphs. }}
+
+edge :: 'edge_' ::= {{ com Edges. }}
+ | ppp -- A -- b --> qq :: :: edge {{ tex [[ppp]] \longrightarrow^{[[A]]}_{[[b]]} [[qq]] }}
+
+defns Ref :: '' ::=
 
 defn
 Store1 ; Path ; Moment ; Space |- e !! Store2 ; v

@@ -74,7 +74,7 @@ Store {{ tex \sigma }} :: 'Store_' ::= {{ com Stores. }}
  | Store { pp |-> v } :: M :: updateValue {{ com Defined as two cases, on $[[v]]$. }}
  | Store { pp |/-> } :: M :: removePointer {{ com Remove cell at pointer $[[pp]]$. }}
 
-StoreValueOption {{ tex \dot{v} }} :: 'StoreValueOption_' ::= {{ com Optional thunk cache (store and value). }}
+StoreValueOption {{ tex \tilde{v} }} :: 'StoreValueOption_' ::= {{ com Optional thunk cache (store and value). }}
  | empty :: :: empty {{ tex \bullet }} {{ com None. }}
  | ( Store , v ) :: :: value {{ com Some store~$[[Store]]$ and value~$[[v]]$. }} {{ tex \left<[[Store]], [[v]]\right> }}
 
@@ -158,11 +158,35 @@ ppp {{ tex \dot{\tilde{p} } }} , qqq {{ tex \dot{\tilde{q} } }} :: 'ppp_' ::= {{
  | ( pp , m ) :: :: pointer {{ com Full pointer~$[[pp]]$ at meta-moment~$[[m]]$ }}
 
 t :: 't_' ::= {{ com Local traces. A list of edge identifiers. }}
+ | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
+ | t1 , t2 :: :: sequence {{ com Sequence. }}
+ | n :: :: edge {{ com Edge (identified as $[[n]]$) }}
 
 Graph {{ tex G }} :: 'Graph_' ::= {{ com Graphs. }}
+ | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
+ | Graph1 , Graph2 :: :: union {{ com Disjoint union. }} {{ tex [[Graph1]] \cupdot [[Graph2]] }}
+ | ppp |-> node :: :: node {{ com Graph node (cell). }}
+ | n |-> edge :: :: edge {{ com Graph edge. }}
+
+node :: 'node_' ::= {{ com Nodes (graph cells). }}
+ | NonThunk v :: :: NonThunk {{ com Non-thunk. }} {{ tex [[v]] }}
+ | Thunk ( e , cache ) :: :: Thunk {{ com Thunk. }} {{ tex \left<[[e]], [[cache]]\right> }}
+
+cache {{ tex \dot{\tilde{v} } }} :: 'cache_' ::= {{ com Thunk node's cache. }}
+ | empty :: :: empty {{ com Empty. }} {{ tex \bullet }}
+ | ( t , v ) :: :: full {{ com Filled. }} {{ tex \left<[[t]], [[v]]\right> }}
 
 edge :: 'edge_' ::= {{ com Edges. }}
  | ppp -- A -- b --> qq :: :: edge {{ tex [[ppp]] \longrightarrow^{[[A]]}_{[[b]]} [[qq]] }}
+
+A :: 'A_' ::= {{ com Actions (and relevant values). }}
+ | put ( v ) :: :: put {{ com Put value~$[[v]]$. }}
+ | get ( v ) :: :: get {{ com Get value~$[[v]]$. }}
+ | force ( v ) :: :: force {{ com Force edge target, resulting in~$[[v]]$. }}
+
+b :: 'b_' ::= {{ com Status bit. }}
+ | clean :: :: clean {{ com Clean. }}
+ | dirty :: :: dirty {{ com Dirty. }}
 
 defns Ref :: '' ::=
 

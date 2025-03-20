@@ -146,8 +146,8 @@ Path {{ tex \pi }} :: 'Path_' ::= {{ com Paths. }}
 
 %----------------------------
 
-Inc :: '' ::= {{ com \textbf{Incremental Graph Semantics} (below) }}
-|  :: :: 'Inc' {{ tex --- }}
+IncGrammar :: '' ::= {{ com \textbf{Incremental Graph Semantics} (below) }}
+|  :: :: 'IncGrammar' {{ tex --- }}
 
 %----------------------------
 
@@ -339,3 +339,7 @@ pp |-> cell <= pp |-> cell
 
 ---------------------------------------------------- :: cache
 pp |-> Thunk(e,empty) <= pp |-> Thunk(e,(Store,v))
+
+
+
+defns Inc :: '' ::=

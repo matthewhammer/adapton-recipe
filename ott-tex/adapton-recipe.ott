@@ -64,14 +64,14 @@ s :: 's_' ::= {{ com Symbols. }}
 
 cell {{ tex c }} :: 'cell_' ::= {{ com Cells. }}
  | NonThunk v :: :: NonThunk {{ com Non-thunk. }} {{ tex [[v]] }}
- | Thunk ( e , StoreValueOption ) :: :: Thunk {{ com Thunk. }} {{ tex \left<[[e]], [[StoreValueOption]]\right> }}
+ | Thunk ( Space , e , StoreValueOption ) :: :: Thunk {{ com Thunk. }} {{ tex \left<[[Space]], [[e]], [[StoreValueOption]]\right> }}
 
 Store {{ tex \sigma }} :: 'Store_' ::= {{ com Stores. }}
  | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
  | pp |-> cell :: :: cell {{ com Cell. }}
  | Store1 , Store2 :: :: union {{ com Disjoint union. }} {{ tex [[Store1]] \cupdot [[Store2]] }}
  | Store { pp |-> cell } :: M :: updateCell {{ com Cell update. }}
- | Store { pp |-> v } :: M :: updateValue {{ com Defined as two cases, on $[[v]]$. }}
+ | Store { pp |-> ( Space , v ) } :: M :: updateValue {{ com Defined as two cases, on $[[v]]$. }}
  | Store { pp |/-> } :: M :: removePointer {{ com Remove cell at pointer $[[pp]]$. }}
 
 StoreValueOption {{ tex \tilde{v} }} :: 'StoreValueOption_' ::= {{ com Optional thunk cache (store and value). }}
@@ -101,6 +101,7 @@ Moment {{ tex \psi }} :: 'Moment_' ::= {{ com Moments. }}
 v :: 'v_' ::= {{ com Values. }}
  | \ x . e :: :: lambda {{ com Lambda. }}
  | x :: :: var {{ com Variable. }}
+ | ( v1 , v2 ) :: :: pair {{ com Pair. }}
  | thunk ( e ) :: :: thunk {{ com Thunk. }}
  | sym s :: :: symbol {{ com Symbol. }}
  | ptr p :: :: pointer {{ com Pointer. }}
@@ -170,7 +171,7 @@ Graph {{ tex G }} :: 'Graph_' ::= {{ com Graphs. }}
 
 node :: 'node_' ::= {{ com Nodes (graph cells). }}
  | NonThunk v :: :: NonThunk {{ com Non-thunk. }} {{ tex [[v]] }}
- | Thunk ( e , cache ) :: :: Thunk {{ com Thunk. }} {{ tex \left<[[e]], [[cache]]\right> }}
+ | Thunk ( Space , e , cache ) :: :: Thunk {{ com Thunk. }} {{ tex \left<[[Space]], [[e]], [[cache]]\right> }}
 
 cache {{ tex \dot{\tilde{v} } }} :: 'cache_' ::= {{ com Thunk node's cache. }}
  | empty :: :: empty {{ com Empty. }} {{ tex \bullet }}
@@ -196,15 +197,15 @@ Store1 ; Path ; Moment ; Space |- e !! Store2 ; v
 {{ tex [[Store1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]]} [[e]] \Downarrow [[Store2]] ; [[v]] }}
 by
 
------------------------------------------------------------------------------------------ :: here
+------------------------------------------------------------- :: here
 Store ; Path ; Moment ; Space |- here() !! Store ; sp Space
 
------------------------------------------------------------------------------------------ :: now
+------------------------------------------------------------- :: now
 Store ; Path ; Moment ; Space |- now() !! Store ; mt Moment
 
+---------------------------------------------------------------- :: thunk
+Store ; Path ; Moment ; Space |- thunk(e) !! Store ; thunk(e)
 
------------------------------------------------------------------------------------------ :: thunk
-Store ; Path ; Moment ; Space |- thunk(e) !! Store ; thunk(do goto space(sp Space){ e })
 
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; thunk(e2)
 Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
@@ -244,14 +245,14 @@ Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
 (subSpace(Space, s), Moment)^st \notin Path
 ---------------------------------------------------------------------------------------------------------------- :: putNow
-Store1 ; Path ; Moment ; Space |- put (e1, e2) !! Store3{ (subSpace(Space, s), Moment)^st |-> v } ; ptr subSpace(Space,s)
+Store1 ; Path ; Moment ; Space |- put (e1, e2) !! Store3{ (subSpace(Space, s), Moment)^st |->(Space, v) } ; ptr subSpace(Space,s)
 
 
 Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment1 ; Space |- e2 !! Store3 ; v
 Store3 ; Path ; Moment1 ; Space |- e2 !! Store4 ; mt Moment2
 --------------------------------------------------------------------------------------------------------------- :: putDelay
-Store ; Path ; Moment1 ; Space |- put (e1, e2) !! Store4{ (subSpace(Space, s), Moment2)^ts |-> v } ; ptr subSpace(Space,s)
+Store ; Path ; Moment1 ; Space |- put (e1, e2) !! Store4{ (subSpace(Space, s), Moment2)^ts |->(Space, v) } ; ptr subSpace(Space,s)
 
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space2
@@ -260,30 +261,30 @@ Store2((Space2, Moment)^st) = NonThunk v
 Store1 ; Path ; Moment ; Space1 |- get(e) !! Store2 ; v
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space2
-Store2((Space2, Moment)^st) = Thunk(e0, StoreValueOption)
---------------------------------------------------------------- :: getThunk
-Store1 ; Path ; Moment ; Space1 |- get(e) !! Store2 ; thunk(e0)
+Store2((Space2, Moment)^st) = Thunk(Space0, e0, StoreValueOption)
+------------------------------------------------------------------------------ :: getThunk
+Store1 ; Path ; Moment ; Space1 |- get(e) !! Store2 ; (sp Space0, thunk(e0))
 
 
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
-Store2((Space0, Moment)^st) = Thunk(e0, empty)
-Store2 ; Path, (Space0, Moment)^st ; Moment ; Space1 |- e0 !! Store3 ; v
+Store2((Space0, Moment)^st) = Thunk(Space2, e0, empty)
+Store2 ; Path, (Space0, Moment)^st ; Moment ; Space2 |- e0 !! Store3 ; v
 ----------------------------------------------------------------------------------------- :: forceEmpty
-Store1 ; Path ; Moment ; Space1 |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(e0, (Store2, v)) } ; v
+Store1 ; Path ; Moment ; Space1 |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(Space2, e0, (Store2, v)) } ; v
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
-Store2((Space0, Moment)^st) = Thunk(e0, (Store0, v))
+Store2((Space0, Moment)^st) = Thunk(Space2, e0, (Store0, v))
 Store0 <= Store2
 --------------------------------------------------------- :: forceHit
 Store1 ; Path ; Moment ; Space1 |- force(e) !! Store2 ; v
 
-Store1 ; Path ; Moment ; Space |- e !! Store2 ; ptr Space0
-Store2((Space0, Moment)^st) = Thunk(e0, (Store0, v0))
+Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
+Store2((Space0, Moment)^st) = Thunk(Space2, e0, (Store0, v0))
 Store0 </= Store2
-Store2 ; Path, (Space0, Moment)^st ; Moment ; Space |- e0 !! Store3 ; v
+Store2 ; Path, (Space0, Moment)^st ; Moment ; Space2 |- e0 !! Store3 ; v
 ---------------------------------------------------------------------------------------- :: forceMiss
-Store1 ; Path ; Moment ; Space |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(e0, (Store2, v)) } ; v
+Store1 ; Path ; Moment ; Space1 |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(Space2, e0, (Store2, v)) } ; v
 
 
 defn
@@ -338,7 +339,7 @@ Store1 , Store2 <= Store3 , Store4
 pp |-> cell <= pp |-> cell
 
 ---------------------------------------------------- :: cache
-pp |-> Thunk(e,empty) <= pp |-> Thunk(e,(Store,v))
+pp |-> Thunk(Space,e,empty) <= pp |-> Thunk(Space,e,(Store,v))
 
 
 

@@ -20,6 +20,7 @@ terminals :: 'terminals_' ::=
 | !! :: :: downarrow {{ tex \Downarrow }}
 | |- :: :: vdash {{ tex \vdash }}
 | != :: :: noteq {{ tex  \neq }}
+| /= :: :: noteqSlash {{ tex  \neq }}
 
 % | == :: :: equiv {{ tex \equiv }}
 % | forall :: :: forall {{ tex \forall }}
@@ -47,7 +48,9 @@ formula :: 'formula_' ::=
  | judgement :: :: judgement
  | Store ( pp ) =  cell :: :: graphGetCell
  | v1 = v2 :: :: equal
- | v1 /= v2 :: :: notEqual
+ | v1 /= v2 :: :: notEqualValue
+ | e1 /= e2 :: :: notEqualExpression
+ | Space1 /= Space2 :: :: notEqualSpace
  | Space1 = Space2 :: :: spaceEqual
  | Moment1 = Moment2 :: :: momentEqual
  | Moment1 != Moment2 :: :: momentNotEqual
@@ -77,6 +80,7 @@ Store {{ tex \sigma }} :: 'Store_' ::= {{ com Stores. }}
 StoreValueOption {{ tex \tilde{v} }} :: 'StoreValueOption_' ::= {{ com Optional thunk cache (store and value). }}
  | empty :: :: empty {{ tex \bullet }} {{ com None. }}
  | ( Store , v ) :: :: value {{ com Some store~$[[Store]]$ and value~$[[v]]$. }} {{ tex \left<[[Store]], [[v]]\right> }}
+ | _ :: M :: wildCardPattern
 
 p :: 'p_' ::= {{ com Pointers (spatial component only). }}
  | Space :: :: pointer {{ com Space $[[Space]]$. }}
@@ -176,6 +180,7 @@ node :: 'node_' ::= {{ com Nodes (graph cells). }}
 cache {{ tex \dot{\tilde{v} } }} :: 'cache_' ::= {{ com Thunk node's cache. }}
  | empty :: :: empty {{ com Empty. }} {{ tex \bullet }}
  | ( t , v ) :: :: full {{ com Filled. }} {{ tex \left<[[t]], [[v]]\right> }}
+ | _ :: M :: wildCardPattern
 
 edge :: 'edge_' ::= {{ com Edges. }}
  | ppp -- A -- b --> qq :: :: edge {{ tex [[ppp]] \longrightarrow^{[[A]]}_{[[b]]} [[qq]] }}
@@ -317,6 +322,27 @@ Store1 </= Store2
 :: :: notAligned :: 'NA_'
 {{ tex [[Store1]] \not\leq [[Store2]] }}
 by
+
+Store1 </= Store3
+----------------------------------- :: ll
+Store1 , Store2 </= Store3 , Store4
+
+Store2 </= Store4
+----------------------------------- :: rr
+Store1 , Store2 </= Store3 , Store4
+
+Store2 </= Store3
+----------------------------------- :: rl
+Store1 , Store2 </= Store3 , Store4
+
+Store1 </= Store4
+----------------------------------- :: lr
+Store1 , Store2 </= Store3 , Store4
+
+Space /= Space' \/ e /= e'
+------------------------------------------------------ :: cache
+pp |-> Thunk(Space,e,_) </= pp |-> Thunk(Space',e',_)
+
 
 defn
 Store1 <= Store2

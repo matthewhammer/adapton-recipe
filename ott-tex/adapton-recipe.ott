@@ -275,20 +275,20 @@ Store1 ; Path ; Moment ; Space1 |- get(e) !! Store2 ; (sp Space0, thunk(e0))
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
 Store2((Space0, Moment)^st) = Thunk(Space2, e0, empty)
 Store2 ; Path, (Space0, Moment)^st ; Moment ; Space2 |- e0 !! Store3 ; v
------------------------------------------------------------------------------------------ :: forceEmpty
+----------------------------------------------------------------------------------------- :: emptyForce
 Store1 ; Path ; Moment ; Space1 |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(Space2, e0, (Store2, v)) } ; v
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
 Store2((Space0, Moment)^st) = Thunk(Space2, e0, (Store0, v))
 Store0 <= Store2
---------------------------------------------------------- :: forceHit
+--------------------------------------------------------- :: reuseForce
 Store1 ; Path ; Moment ; Space1 |- force(e) !! Store2 ; v
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
 Store2((Space0, Moment)^st) = Thunk(Space2, e0, (Store0, v0))
 Store0 </= Store2
 Store2 ; Path, (Space0, Moment)^st ; Moment ; Space2 |- e0 !! Store3 ; v
----------------------------------------------------------------------------------------- :: forceMiss
+---------------------------------------------------------------------------------------- :: redoForce
 Store1 ; Path ; Moment ; Space1 |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(Space2, e0, (Store2, v)) } ; v
 
 

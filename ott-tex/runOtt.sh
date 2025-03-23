@@ -13,7 +13,7 @@ ott \
     -tex_show_meta false \
     -tex_show_categories false \
     -i $FORMALISM \
-    -o formalism.tex \
+    -o formalism.tex > formalism.ott-out
 
 ott \
     -merge true \
@@ -21,13 +21,13 @@ ott \
     -tex_show_meta false \
     -tex_show_categories false \
     -i $FORMALISM \
-    -o formalism-commands.tex \
+    -o formalism-commands.tex > formalism-commands.ott-out
 
 ott \
     -tex_wrap true \
     -i $FORMALISM \
-    -tex_filter overview.mng overview.tex
+    -tex_filter adapton-recipe.tex adapton-recipe.out.tex > overview.ott-out
 
-pdflatex formalism.tex || echo Expect manual intervention here, sometimes.
+# pdflatex formalism.tex || echo Expect manual intervention here, sometimes.
 
-pdflatex overview.tex
+pdflatex adapton-recipe.out.tex

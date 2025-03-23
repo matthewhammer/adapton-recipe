@@ -370,3 +370,24 @@ pp |-> Thunk(Space,e,empty) <= pp |-> Thunk(Space,e,(Store,v))
 
 
 defns Inc :: '' ::=
+
+defn
+Graph1 ; Path ; Moment ; Space |- e !! Graph2 ; v
+:: :: incEval :: 'IE_'
+{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]]} [[e]] \Downarrow [[Graph2]] ; [[v]] }}
+by
+
+
+
+defn
+Graph1 <= Graph2
+:: :: incAligned :: 'IA_'
+{{ tex [[Graph1]] \leq [[Graph2]] }}
+by
+
+
+defn
+Store ~~ Graph
+:: :: equiv :: 'EQ_'
+{{ tex [[Store]] \approx [[Graph]] }}
+by

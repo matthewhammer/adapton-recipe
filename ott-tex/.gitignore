@@ -1,3 +1,7 @@
+*.ott-out
+*.out
+out.*
+*.out.*
 overview.tex
 formalism-autogen.tex
 formalism-commands.tex

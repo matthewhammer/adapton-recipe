@@ -117,6 +117,9 @@ e :: 'e_' ::= {{ com Expressions. }}
  | now ( ) :: :: now {{ com Now. }}
  | thunk ( e ) :: :: thunk {{ com Thunk. }}
  | do C ( e1 ) { e2 } :: :: do {{ com Do. }}
+ | do @ e1 { e2 } :: M :: doAt {{ com Do-at. Shorthand syntax. }}
+ | do @ e1 within e2 { e3 } :: M :: doAtWithin {{ com Do-at-with. Shorthand syntax. }}
+ | do @ within e1 { e2 } :: M :: doAtWithin2 {{ com Do-at-with, same space. }}
  | put ( e1 , e2 , e3 ) :: :: putThree {{ com Put (fully-qualified). }}
  | put ( e1 , e2 ) :: :: putTwo {{ com Put (into current moment). }}
  | get ( e ) :: :: get {{ com Get. }}
@@ -182,8 +185,8 @@ cache {{ tex \dot{\tilde{v} } }} :: 'cache_' ::= {{ com Thunk node's cache. }}
  | ( t , v ) :: :: full {{ com Filled. }} {{ tex \left<[[t]], [[v]]\right> }}
  | _ :: M :: wildCardPattern
 
-edge :: 'edge_' ::= {{ com Edges. }}
- | ppp -- A -- b --> qq :: :: edge {{ tex [[ppp]] \longrightarrow^{[[A]]}_{[[b]]} [[qq]] }}
+edge :: 'edge_' ::= {{ com Edges (graph cell relationships). }}
+ | ppp -- A -- b --> qq :: :: edge {{ tex [[ppp]] \longrightarrow^{[[A]]}_{[[b]]} [[qq]] }} {{ com Edge data. }}
 
 A :: 'A_' ::= {{ com Actions (and relevant values). }}
  | put ( v ) :: :: put {{ com Put value~$[[v]]$. }}
@@ -221,6 +224,21 @@ Store1 ; Path ; Moment ; Space |- force(e1) !! Store3 ; v
 
 ------------------------------------------------------- :: sym
 Store ; Path ; Moment ; Space |- sym s !! Store ; sym s
+
+Store ; Path ; Moment ; Space |- e1 !! Store ; sym s1
+Store ; Path ; Moment ; Space |- e2 !! Store ; sym s2
+--------------------------------------------------------------- :: symMinus
+Store ; Path ; Moment ; Space |- e1 - e2 !! Store ; sym s1-s2
+
+Store ; Path ; Moment ; Space |- e1 !! Store ; sym s1
+Store ; Path ; Moment ; Space |- e2 !! Store ; sym s2
+--------------------------------------------------------------- :: symDot
+Store ; Path ; Moment ; Space |- e1 . e2 !! Store ; sym s1.s2
+
+Store ; Path ; Moment ; Space |- e1 !! Store ; sym s1
+Store ; Path ; Moment ; Space |- e2 !! Store ; sym s2
+--------------------------------------------------------------- :: symApp
+Store ; Path ; Moment ; Space |- e1(e2) !! Store ; sym s1(s2)
 
 
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s

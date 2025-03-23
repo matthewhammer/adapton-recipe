@@ -442,6 +442,42 @@ throughout.
 \drule{EXXredoForce}
 \end{mathpar}
 
+\subsection{Aligned stores}
+
+\[
+\begin{array}{ll}
+\boxed{
+  [[Store1 <= Store2]]
+}
+&
+\text{``Store $[[Store2]]$ is an aligned extension of store~$[[Store1]]$''}
+\end{array}
+\]
+
+\begin{mathpar}
+  \drule{AXXempty}
+  \drule{AXXbinary}
+  \drule{AXXcell}
+  \drule{AXXcache}
+\end{mathpar}
+
+\[
+\begin{array}{ll}
+\boxed{
+  [[Store1 </= Store2]]
+}
+&
+\text{``Store $[[Store2]]$ is \textbf{not} an aligned extension of store~$[[Store1]]$''}
+\end{array}
+\]
+
+\begin{mathpar}
+  \drule{NAXXll}
+  \drule{NAXXlr}
+  \drule{NAXXrl}
+  \drule{NAXXrr}
+  \drule{NAXXcache}
+\end{mathpar}
 
 \section{Graphs}
 

@@ -13,6 +13,7 @@
 \usepackage[alternateNonterms]{ottalt}
 \usepackage{amsmath}
 \usepackage{geometry}
+\usepackage{graphicx}
 
 % \usepackage{bm} % bold tt font in math mode
 
@@ -111,15 +112,14 @@ on global state.
 \end{center}
 
 \noindent
-By employing with these new primitives, the program expresses dependencies
+By employing these special primitives, the program expresses dependencies
 between inputs and outputs (reading the former and writing the later),
 and Adapton hides the complexity of representing and maintaining these
 dynamic dependencies.
 
-Behind the scenes, Adapton's recipe provides a demand-driven
-dependence graph, including semantics for the graph components'
-memoization and change propagation
-\footnote{
+Behind the scenes, Adapton's recipe provides the demanded computation graph (DCG),
+including the semantics for the graph components'
+memoization and change propagation\footnote{
 In a sense, Adapton enriches the existing (CBV or CBN)
 \emph{evaluation strategy} of a PL with an additional dimension of
 evaluation that requires a persistent a graph representation of the
@@ -137,9 +137,8 @@ for communicating values between different points of incremental
 space-time, based on symbolic names whose definitions persist across
 distinct incremental runs.
 %
-These symbols name the program's dynamic and data structure pointers
-in a way that differentiates their ``change positions'' from the data
-that resides there at any given time.
+These symbols name the program's individual steps and datums in a way
+that identifies their ``change positions'' symbolically.
 %
 This level of indirection turns out to be critical for efficient
 incremental responses to changes.
@@ -150,7 +149,7 @@ ways:
 
 \begin{itemize}
 
-\item \textbf{Reading} from incrementally-changing global state, such as state controlled directly by interactive user input that edits it, or a subcomputation that depends transitively on it somehow.
+\item \textbf{Reading} from incrementally-changing global state, such as state controlled directly by interactive user input that edits it.
   
 \item \textbf{Writing} to incrementally-changing global state, including intermediate results and the final output of the computation.
 
@@ -162,7 +161,8 @@ programming language with primitives to handle these read and write effects.
 
 \section{Symbols}
 
-The Adapton recipe uses the notion of ``symbols.'' A symbol is a
+
+This Adapton recipe uses the notion of ``symbols.'' A symbol is a
 unique identifier, determined dynamically by a running program, or fed
 as part of its input, or some combination of those two methods.
 %
@@ -170,25 +170,8 @@ When used to name something, like a specific datum or sub-computation,
 the incremental program also implicitly says when and where to reuse
 it later, as the program re-executes incrementally.
 
-%% Specifically, each graph component (node or edge) is uniquely named
-%% by a symbol $\ottnt{s}$, adorned with a special symbol constructor that
-%% indicates whether it names a node or edge in the graph.
-%% %
-%% We call these symbols \emph{pointers}, as they identify unique objects
-%% in the ambient graph.
-
 \ottgrammartabular{
   \otts
-  \\
-  \ottSpace
-  \\
-  \ottMoment
-  \\
-  \ottp
-  \\
-  \ottpp
-  \\
-  \ottd
 }
 
 Each symbol $\ottnt{s}$ is made of one or more literals,
@@ -209,7 +192,46 @@ names in UNIX, where dashes and dots are common word separators.
 %
 We use the application form to indicate sub-spaces and sub-moments.
 
+\section{Symbolic Space and Time.}
 
+Each program or library that uses the Extended Adapton Recipe (EAR)
+defines a system of symbolic names for space and time.
+The details of this system are program/library-specific, and the
+design of EAR itself affords a chance to compose distinct systems to
+create larger ones.
+Essentially, the chance to compose distinct systems stems from the choice of moments
+and space to each be \emph{nestable} (or \emph{fractal}) in nature.
+
+\ottgrammartabular{
+  \ottSpace
+  \\
+  \ottMoment
+  \\
+  \ottp
+  \\
+  \ottpp
+  \\
+  \ottd
+}
+
+Programs using EAR have control over space and time in ways
+that ordinary programs do not.
+%
+One aspect of this control is the distinction between
+\emph{space-time} and \emph{time-space} regions of the store, which are complementary in
+the recipe.
+%
+The storage used by the program distinguishes these regions as follows.
+%
+Space-time ($[[d = st]]$) holds data that ``is'' part of a moment.
+By contrast,
+time-space ($[[d = ts]]$) holds data that is ``becoming'' part of a moment.
+
+When the program navigates time, this data that is ``becoming'' part
+of the target moment transitions atomically into what ``is'' at that
+target moment where the program arrives.
+%
+See Sections~\ref{sec:refsem-navigation} and~\ref{sec:refsem-undelay}.
 
 \section{Programs}
 
@@ -331,45 +353,60 @@ caching that lacks dependence graphs, giving a basis for comparison
 for the incremental dynamics that requires and uses dependence graphs
 throughout.
 
+\begin{tabular}{cc}
+  \\[0mm]
+\begin{minipage}{0.42\textwidth}
+\ottgrammartabular{
+  \ottStore
+}
+\end{minipage}
+&
+\begin{minipage}{0.43\textwidth}
+\ottgrammartabular{
+  \ottcell
+}
+\end{minipage}
+\end{tabular}
+
 \[
 \begin{array}{lc}
-\boxed{
-  [[Store1; Path; Moment; Space |- e !! Store2; v]]\
-}
+\scalebox{1.5}{\boxed{
+  [[Store1; Path; Moment; Space |- e !! Store2; v]]
+}}
 &
-\begin{array}{p{3.2in}}
+\begin{array}{p{4in}}
   ``
   Under store~$[[Store1]]$,
   path~$[[Path]]$,
-  moment~$[[Moment]]$,
-  and space~$[[Space]]$,\\
-  \hspace{1.5mm}~expression~$[[e]]$ evaluates fully,\\
-  \hspace{3mm}~resulting in store~$[[Store2]]$ and value~$[[v]]$.
+  space~$[[Space]]$,
+  and
+  moment~$[[Moment]]$,\\
+  \hspace{3mm}~expression~$[[e]]$ evaluates fully,\\
+  \hspace{6mm}~resulting in store~$[[Store2]]$ and value~$[[v]]$.
   ''
 \end{array}
 \end{array}
 \]
 
-\ottgrammartabular{
-  \ottStore
-  \\
-  \ottcell
-}
 
-\subsection{Here and now.}
+\subsection{Pure thunks.}
+
+Thunk values that are not stored are forced in the usual way:
 
 \[
-\drule{EXXhere}
-\drule{EXXnow}
+\drule{EXXthunk}
+\drule{EXXforceThunk}
 \]
 
-\subsection{Symbols are values.}
+\subsection{Symbol expressions.}
+
+Symbols are values:
 
 \[
 \drule{EXXsym}
 \]
 
-\subsection{Symbols can be trees.}
+Some expressions produce symbol trees:
 
 \[
 \drule{EXXsymMinus}
@@ -377,18 +414,11 @@ throughout.
 \drule{EXXsymApp}
 \]
 
-\subsection{Pure thunks.}
-
-\[
-\drule{EXXthunk}
-\drule{EXXforceThunk}
-\]
-
 \subsection{Put and get.}
 
 \[
 \begin{array}{cc}
-  \drule{EXXputNow}
+  \drule{EXXputImm}
   &
   \drule{EXXgetNonThunk}
   \\[2mm]
@@ -398,15 +428,38 @@ throughout.
 \end{array}
 \]
 
+There are two temporal cases for putting a value into the store (immediate in space-time, or delayed in time-space).
+%
+Each value put into the store can either be a thunk or a non-thunk value.
+For a thunk, the store update syntax $[[Store{pp |-> (Space, v)}]]$
+means that $[[v = thunk(e)]]$ for some expression~$[[e]]$,
+and this update is defined as $[[Store{pp |-> Thunk(Space, e, empty)}]]$.
+Alternatively, when $[[v /= thunk(e)]]$, 
+the update ignores the space~$[[Space]]$ and is defined instead as $[[Store{pp |-> NonThunk v}]]$.
+
+For the two \texttt{get} rules, the store access $[[Store((Space2, Moment) ^ st) = cell]]$ compares the current moment~$[[Moment]]$ to those written at the given space~$[[Space2]]$, choosing the ``latest'' cell whose moment is equal to or earlier than~$[[Moment]]$, if it exists.
+It is not defined when no such moment exists.
+There are two cases, depending on whether~$[[cell]]$ is a non-thunk value, or a thunk cell.
+For the latter, the operation returns a pair that includes the space value used by the thunk (note that $[[Space1]]$, $[[Space2]]$ and $[[Space0]]$ can all be distinct).
+
 \subsection{Navigating space-time.}
+\label{sec:refsem-navigation}
 
 \[
-\begin{array}[t]{l|c|c}
+\begin{array}[t]{p{0.731in}|c|c}
   & \textbf{Space} & \textbf{Time}
   \\[2mm]
   \hline
   &&
   \\[2mm]
+  \begin{tabular}[l]{l}\texttt{here},\\\texttt{now}\end{tabular}
+  & \drule{EXXhere}
+  & \drule{EXXnow}
+  \\[2mm]
+  \hline
+  &&
+  \\[2mm]
+  
   \texttt{goto}
   &
   \drule{EXXgotoSpace}
@@ -416,6 +469,7 @@ throughout.
   \hline
   &&
   \\[2mm]
+
   \texttt{within}
   &
   \drule{EXXwithinSpace}
@@ -425,6 +479,7 @@ throughout.
 \]
 
 \subsection{Navigating time: Undelay}
+\label{sec:refsem-undelay}
 
 \begin{mathpar}
 \drule{undelayXXempty}
@@ -637,6 +692,54 @@ implementation as this traversal) ensures that this transitive closure
 has already been marked dirty, and traversing it would hence be wasted
 work (unless to check internal invariants dynamically, and provide
 extra implementation correctness assurances experimentally).
+
+
+\[
+\begin{array}{lc}
+  {\scalebox{1.5}{
+  \boxed{[[Graph1; Path; Moment; Space |- e !! Graph2; v]]}}}
+&
+\begin{array}{p{4in}}
+  ``
+  Under initial graph~$[[Graph1]]$,
+  path~$[[Path]]$,
+  space~$[[Space]]$,
+  and moment~$[[Moment]]$,\\
+  \hspace{3mm}~expression~$[[e]]$ evaluates fully,\\
+  \hspace{6mm}~resulting in graph~$[[Graph2]]$ and value~$[[v]]$.
+  ''
+\end{array}
+\end{array}
+\]
+
+
+\section{From-scratch Consistency}
+
+Both of the following hold:
+\begin{itemize}
+\item[(1)] $\begin{array}[t]{lcl}
+  [[Graph1; Path; Moment; Space |- e !! Graph2; v]]
+  & \Rightarrow &
+  \exists
+      [[Store1]], [[Store2]].~~
+      [[Store1 ~~ Graph1]]
+      ~~\bigwedge~~ [[Store2 ~~ Graph2]]
+      %\\
+      %&&
+  ~~\bigwedge~~ [[Store1; Path; Moment; Space |- e !! Store2; v ]]
+  \end{array}$
+\item[(2)] $\begin{array}[t]{lcl}
+  [[Store1; Path; Moment; Space |- e !! Store2; v]]
+  & \Rightarrow &
+  \exists
+      [[Graph1]], [[Graph2]].~~
+      [[Store1 ~~ Graph1]]
+      ~~\bigwedge~~ [[Store2 ~~ Graph2]]
+      %\\
+      %&&
+  ~~\bigwedge~~ [[Graph1; Path; Moment; Space |- e !! Graph2; v ]]
+  \end{array}$
+\end{itemize}
 
 \end{document}
 

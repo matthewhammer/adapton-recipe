@@ -51,6 +51,7 @@ formula :: 'formula_' ::=
  | v1 = v2 :: :: equal
  | v1 /= v2 :: :: notEqualValue
  | e1 /= e2 :: :: notEqualExpression
+ | d1 = d2 :: :: dimensionEqual
  | StoreValueOption1 /= StoreValueOption2 :: :: notEqualValueStoreOption
  | Space1 /= Space2 :: :: notEqualSpace
  | Space1 = Space2 :: :: spaceEqual
@@ -62,7 +63,7 @@ formula :: 'formula_' ::=
  | ( formula ) :: :: formula {{ tex \left([[formula]]\right) }}
 
 s :: 's_' ::= {{ com Symbols. }}
- | literal :: :: literal {{ tex \cdots }} {{ com Literal number, or symbol. }}
+ | literal :: :: literal {{ tex \cdots }} {{ com Literal number, string, or symbol (program identifier). }}
  | s1 - s2 :: :: dash {{ com Dash binary from. }}
  | s1 . s2 :: :: dot {{ com Dot binary. }}
  | s1 ( s2 ) :: :: app {{ com App binary form. }}
@@ -90,9 +91,9 @@ p :: 'p_' ::= {{ com Pointers (spatial component only). }}
 pp {{ tex \tilde{p} }}, qq {{ tex \tilde{q} }} :: 'pp_' ::= {{ com Full pointers. }}
  | ( Space , Moment ) ^ d :: :: pointer {{ tex \left<[[Space]],[[Moment]]\right>^{[[d]]} }} {{ com Space $[[Space]]$ and moment $[[Moment]]$, dimension order~$[[d]]$. }}
 
-d :: 'd_' ::= {{ com Dimension order. }}
- | st :: :: st {{ com Space, time. }}
- | ts :: :: ts {{ com Time, space. }}
+d :: 'd_' ::= {{ com Dimension order (store region). }}
+ | st :: :: st {{ com $\left<\text{Space}, \text{Time}\right>$ region. }}
+ | ts :: :: ts {{ com $\left<\text{Time}, \text{Space}\right>$ region. }}
 
 Space {{ tex \varsigma }} :: 'Space_' ::= {{ com Spaces. }}
  | here :: :: here {{ com Here. }}
@@ -269,7 +270,7 @@ Store1 ; Path ; Moment ; Space |- do goto moment(e1) { e2 } !! Store4 ; v
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
 (subSpace(Space, s), Moment)^st \notin Path
----------------------------------------------------------------------------------------------------------------- :: putNow
+---------------------------------------------------------------------------------------------------------------- :: putImm
 Store1 ; Path ; Moment ; Space |- put (e1, e2) !! Store3{ (subSpace(Space, s), Moment)^st |->(Space, v) } ; ptr subSpace(Space,s)
 
 

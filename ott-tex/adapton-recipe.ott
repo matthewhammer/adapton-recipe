@@ -47,9 +47,11 @@ terminals :: 'terminals_' ::=
 formula :: 'formula_' ::=
  | judgement :: :: judgement
  | Store ( pp ) =  cell :: :: graphGetCell
+ | Store1 == Store2 :: :: storeEquiv {{ tex [[Store1]] \equiv [[Store2]] }}
  | v1 = v2 :: :: equal
  | v1 /= v2 :: :: notEqualValue
  | e1 /= e2 :: :: notEqualExpression
+ | StoreValueOption1 /= StoreValueOption2 :: :: notEqualValueStoreOption
  | Space1 /= Space2 :: :: notEqualSpace
  | Space1 = Space2 :: :: spaceEqual
  | Moment1 = Moment2 :: :: momentEqual
@@ -341,25 +343,20 @@ Store1 </= Store2
 {{ tex [[Store1]] \not\leq [[Store2]] }}
 by
 
-Store1 </= Store3
------------------------------------ :: ll
-Store1 , Store2 </= Store3 , Store4
-
-Store2 </= Store4
------------------------------------ :: rr
-Store1 , Store2 </= Store3 , Store4
-
-Store2 </= Store3
------------------------------------ :: rl
-Store1 , Store2 </= Store3 , Store4
-
-Store1 </= Store4
------------------------------------ :: lr
-Store1 , Store2 </= Store3 , Store4
+Store1(pp) = cell1
+Store2(pp) = cell2
+pp |-> cell1 </= pp |-> cell2
+--------------------------------- :: focus
+Store1 </= Store2
 
 Space /= Space' \/ e /= e'
------------------------------------------------------- :: cache
+------------------------------------------------------ :: changed
 pp |-> Thunk(Space,e,_) </= pp |-> Thunk(Space',e',_)
+
+
+StoreValueOption /= empty
+------------------------------------------------------------------------ :: forgot
+pp |-> Thunk(Space,e,StoreValueOption) </= pp |-> Thunk(Space',e',empty)
 
 
 defn
@@ -377,6 +374,12 @@ Store1 <= Store3
 Store2 <= Store4
 ----------------------------------- :: binary
 Store1 , Store2 <= Store3 , Store4
+
+Store1 == Store3
+Store3 <= Store4
+Store4 == Store2
+----------------------------------- :: equiv
+Store1 <= Store2
 
 
 -------------------------- :: cell

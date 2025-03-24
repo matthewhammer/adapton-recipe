@@ -6,6 +6,7 @@ set -e
 FORMALISM=adapton-recipe.ott
 
 ott \
+    -colour false \
     -merge true \
     -show_sort true \
     -show_defns true \
@@ -16,6 +17,7 @@ ott \
     -o formalism.tex > formalism.ott-out
 
 ott \
+    -colour false \
     -merge true \
     -tex_wrap false \
     -tex_show_meta false \

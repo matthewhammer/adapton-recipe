@@ -693,6 +693,7 @@ has already been marked dirty, and traversing it would hence be wasted
 work (unless to check internal invariants dynamically, and provide
 extra implementation correctness assurances experimentally).
 
+\section{Graph Dynamics}
 
 \[
 \begin{array}{lc}
@@ -712,6 +713,21 @@ extra implementation correctness assurances experimentally).
 \end{array}
 \]
 
+\subsection{Put and get.}
+
+(Compared to reference dynamics, very similar, but uses dirtying for put.)
+
+\subsection{Forcing a thunk pointer.}
+
+(Compared to reference dynamics, only two rules, and second one uses cleaning to always ``redo''.)
+
+\subsection{Dirtying.}
+
+\subsection{Cleaning.}
+
+\subsection{Undelay.}
+
+(Compared to reference dynamics, very similar, but uses dirtying.)
 
 \section{From-scratch Consistency}
 

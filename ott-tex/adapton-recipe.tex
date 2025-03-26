@@ -160,7 +160,7 @@ programming language with primitives to handle these read and write effects.
 
 
 \section{Symbols}
-
+\label{sec:symbols}
 
 This Adapton recipe uses the notion of ``symbols.'' A symbol is a
 unique identifier, determined dynamically by a running program, or fed
@@ -193,6 +193,7 @@ names in UNIX, where dashes and dots are common word separators.
 We use the application form to indicate sub-spaces and sub-moments.
 
 \section{Symbolic Space and Time.}
+\label{sec:symbolic-space-and-time}
 
 Each program or library that uses the Extended Adapton Recipe (EAR)
 defines a system of symbolic names for space and time.
@@ -242,13 +243,7 @@ types, recursive functions, pattern matching, and other details.
 To this host language, the recipe adds a handful of special value
 forms and special expression forms.
 
-\paragraph{Values.}
-
-\ottgrammartabular{
-  \ottv
-}
-
-\paragraph{Role of thunks in the recipe.}
+\paragraph{Thunks as values.}
 In contrast to earlier CBPV-based presentations that fused all thunks
 with the ambient global state (PLDI 2014 and OOPSLA 2015), here we
 assume ordinary thunks exist in the host language already and we treat
@@ -257,17 +252,27 @@ them as a distinct, ordinary value type.
 Because they are central to the special new forms, we illustrate their
 (pure) dynamics in detail, though again this dynamics is the ordinary one.
 
+\paragraph{Value syntax.}
+The recipe assumes (or adds) an ordinary notion of thunk values.
+%
+To this, it adds symbols, pointers, spaces and moments (See Sections~\ref{sec:symbols} and \ref{sec:symbolic-space-and-time}).
 
-\paragraph{Expressions.}
+\ottgrammartabular{
+  \ottv
+}
+
+\paragraph{Expression syntax.}
 
 We begin by assuming usual CBV expression forms, and thunks.
 %
 To these forms, the Adapton recipe also adds expression forms that
-affect the ambient graph: \textbf{put}, \textbf{get}, \textbf{force}
-and \textbf{do}, each using the new value forms of symbols or
-pointers, or both.  The functions \textbf{here} and \textbf{now} would
-practically be exposed with a library, but we include them here for
-illustration.
+affect the ambient mutable state: \textbf{put}, \textbf{get}, \textbf{force}.
+%
+The forms \textbf{here}, \textbf{now} and \textbf{do} help indicate
+and control the current space and moment of the program, respectively.
+%
+Together, the current space and moment influence how the individual
+cells of global state are created and accessed.
 
 \ottgrammartabular{
   \otte
@@ -281,7 +286,10 @@ illustration.
   \ottCxtDim
 }  
 
-We introduce some syntactic sugar.
+\noindent
+The syntax we show above is clear, but not concise.
+%
+To help remedy this for common situations, we introduce some syntactic sugar, as follows.
 
 \paragraph{Do-at notation.}
 
@@ -341,20 +349,9 @@ caching that lacks dependence graphs, giving a basis for comparison
 for the incremental dynamics that requires and uses dependence graphs
 throughout.
 
-\begin{tabular}{cc}
-  \\[0mm]
-\begin{minipage}{0.42\textwidth}
-\ottgrammartabular{
-  \ottStore
-}
-\end{minipage}
-&
-\begin{minipage}{0.43\textwidth}
-\ottgrammartabular{
-  \ottcell
-}
-\end{minipage}
-\end{tabular}
+\ottgrammartabular{\ottStore}
+\ottgrammartabular{\ottcell}
+\ottgrammartabular{\ottStoreValueOption}
 
 \[
 \begin{array}{lc}
@@ -490,10 +487,10 @@ For the latter, the operation returns a pair that includes the space value used 
 \subsection{Aligned stores}
 
 \[
-\begin{array}{ll}
+\begin{array}{ll}\scalebox{1.5}{
 \boxed{
   [[Store1 <= Store2]]
-}
+}}
 &
 \text{``Store $[[Store2]]$ is an aligned extension of store~$[[Store1]]$''}
 \end{array}
@@ -511,8 +508,9 @@ For the latter, the operation returns a pair that includes the space value used 
 
 \[
 \begin{array}{ll}
+  \scalebox{1.5}{
 \boxed{
-  [[Store1 </= Store2]]
+  [[Store1 </= Store2]]}
 }
 &
 \text{``Store $[[Store2]]$ is \textbf{not} an aligned extension of store~$[[Store1]]$''}
@@ -621,6 +619,44 @@ that transitively forces it.
 \subsection{Dirtying.}
 
 \subsection{Cleaning.}
+
+\[
+\begin{array}{lc}
+  {\scalebox{1.5}{
+  \boxed{[[Graph1; Path; Moment; m; Space |- clean(pp) !! Graph2]]}}}
+&
+\begin{array}{p{4in}}
+  ``
+  Under initial graph~$[[Graph1]]$,
+  path~$[[Path]]$,
+  space~$[[Space]]$,\\
+  \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
+  \hspace{6mm}~pointer~$[[pp]]$ cleans fully,
+  %\\\hspace{9mm}~
+  resulting in graph~$[[Graph2]]$.
+  ''
+\end{array}
+\end{array}
+\]
+
+\[
+\begin{array}{lc}
+  {\scalebox{1.5}{
+  \boxed{[[Graph1; Path; Moment; m; Space |- clean(t) !! Graph2]]}}}
+&
+\begin{array}{p{4in}}
+  ``
+  Under initial graph~$[[Graph1]]$,
+  path~$[[Path]]$,
+  space~$[[Space]]$,\\
+  \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
+  \hspace{6mm}~trace~$[[t]]$ cleans fully,
+  %\\\hspace{9mm}~
+  resulting in graph~$[[Graph2]]$.
+  ''
+\end{array}
+\end{array}
+\]
 
 \subsection{Undelay.}
 

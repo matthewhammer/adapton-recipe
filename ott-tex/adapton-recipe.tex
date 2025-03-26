@@ -21,7 +21,7 @@
 
 \inputott{formalism-commands}
 
-\renewcommand{\ottkw}[1]{\mathtt{#1}}
+\renewcommand{\ottkw}[1]{\textbf{\texttt{#1}}}
 
 %\renewcommand{\ottcom}[1]{\textit{#1}}
 
@@ -235,65 +235,53 @@ See Sections~\ref{sec:refsem-navigation} and~\ref{sec:refsem-undelay}.
 
 \section{Programs}
 
-The Adapton recipe we present here assumes a CBV host language, with
-its own model of recursive data types, recursive functions, pattern
-matching, etc.
+The Adapton recipe we present here assumes a CBV host language, with a
+pre-existing model of common language features, such as recursive data
+types, recursive functions, pattern matching, and other details.
+%
+To this host language, the recipe adds a handful of special value
+forms and special expression forms.
 
 \paragraph{Values.}
-
-The recipe adds a couple of value forms to this otherwise conventional core language.
-%
-These forms consist of symbols as first-class values, and as allocated
-pointer names.
-%
-The recipe extends the meaning of forcing a thunk to the case where a
-thunk is behind a pointer, making that thunk's computation cached and
-incremental.
 
 \ottgrammartabular{
   \ottv
 }
 
+\paragraph{Role of thunks in the recipe.}
+In contrast to earlier CBPV-based presentations that fused all thunks
+with the ambient global state (PLDI 2014 and OOPSLA 2015), here we
+assume ordinary thunks exist in the host language already and we treat
+them as a distinct, ordinary value type.
+%
+Because they are central to the special new forms, we illustrate their
+(pure) dynamics in detail, though again this dynamics is the ordinary one.
 
-If the CBV language has no existing thunk value form, we show how to
-add it to the dynamics here.
-
-The Adapton recipe here uses the thunk form in new cases, but does not
-prescribe anything special about ordinary (non-graph-allocated)
-thunks, in contrast to earlier CBPV-based presentations that fused all
-thunks with the ambient global state (PLDI 2014 and OOPSLA 2015).
 
 \paragraph{Expressions.}
 
-We begin by assuming usual CBV expression forms.  Here, we omit most
-cases and only leave let binding, function abstraction, function
-application and certain binary operators.
-
+We begin by assuming usual CBV expression forms, and thunks.
+%
 To these forms, the Adapton recipe also adds expression forms that
 affect the ambient graph: \textbf{put}, \textbf{get}, \textbf{force}
 and \textbf{do}, each using the new value forms of symbols or
-pointers, or both:
+pointers, or both.  The functions \textbf{here} and \textbf{now} would
+practically be exposed with a library, but we include them here for
+illustration.
 
 \ottgrammartabular{
   \otte
 }
 
-Except for the binary composition forms for symbol values (which are
-each trivial), each new expression form has an interesting,
-non-trivial semantics.
+\ottgrammartabular{
+  \ottC
+  \\
+  \ottCxtVerb
+  \\
+  \ottCxtDim
+}  
 
-By contrast, the existing core language features (let binding,
-function application, etc.) have rules that do not directly use the
-new dynamics, and thus their rules each follow simple, predictable
-changes to the usual rules one would write.
-%
-The other usual rules (e.g., pattern matching) are omitted, as they
-are similarly affected.
-
-In the next section, we explain the dynamic rules formally.
-%
-For the remainder of this section, we give an informal description,
-and motivation, for each new form.
+We introduce some syntactic sugar.
 
 \paragraph{Do-at notation.}
 
@@ -416,9 +404,11 @@ Some expressions produce symbol trees:
 
 \subsection{Put and get.}
 
+Put and get operations give write and read access to the global store.
+
 \[
 \begin{array}{cc}
-  \drule{EXXputImm}
+  \drule{EXXputImmediate}
   &
   \drule{EXXgetNonThunk}
   \\[2mm]
@@ -491,7 +481,7 @@ For the latter, the operation returns a pair that includes the space value used 
 
 \subsection{Forcing a thunk pointer.}
 
-\begin{mathpar}
+ \begin{mathpar}
 \drule{EXXemptyForce}
 \drule{EXXreuseForce}
 \drule{EXXredoForce}
@@ -545,12 +535,6 @@ structure.
 }
 
 \ottgrammartabular{
-%  \ottp
-%  \\
-%  \ottpp
-%  \\
-%    \\
-%  \ottd
   \ottppp
   \\
   \ottnode
@@ -568,146 +552,52 @@ structure.
 
 \paragraph{Nodes.}
 
-Each node is either
-
-\begin{itemize}
-\item A \textbf{reference cell} node with (an empty trace and) a fully-evaluated value~$[[v]]$.
-\item A \textbf{thunk} node, either being
-  \begin{itemize}
-  \item \emph{Unevaluated}, with a space~$[[Space]]$ and body~$[[e]]$, or
-  \item \emph{Evaluated}, with an additional cached store~$[[Store]]$ and result value~$[[v]]$.
-  \end{itemize} 
-\end{itemize}
-
-Whether evaluated or not, a thunk node~$\texttt{\textcolor{red}{<<no parses (char 2): p:*** ( path , e , \_ , \_ ) >>}}$ always
-carries two expressions:
-\begin{itemize}
-\item $\texttt{\textcolor{red}{<<no parses (char 2): pa***th >>}}$ is a path function representing the \emph{(ambient) namespace} of the thunk.
-\item $\ottnt{e}$ is the thunk body itself.
-\end{itemize}
-
 \paragraph{Edges.}
-%
-Each edge records the action~$\ottnt{A}$, the read or
-written value~$\ottnt{v}$, and a dirty bit~$\ottnt{b}$ (initially $\ottkw{clean}$)
-that helps maintain global invariants about the graph's consistency or
-inconsistency during (re)evaluation.
-
-Each edge in the graph is oriented with its source at a thunk node
-performing the edge's effect, regardless of the direction of that
-effect's information flow.
-%
-In particular, when a thunk node~$\ottnt{p}$ reads (\textbf{get}s or
-\textbf{force}s) another node~$\texttt{\textcolor{red}{<<no parses (char 1): q*** >>}}$, that effect is performed by
-$\ottnt{p}$ and thus $\ottnt{p}$ is source of the edge, and $\texttt{\textcolor{red}{<<no parses (char 1): q*** >>}}$ is the
-target, even though the current value of $\texttt{\textcolor{red}{<<no parses (char 1): q*** >>}}$ flows to the current
-continuation of node~$\ottnt{p}$.
-%
-As a consequence of the graph's edge orientation, non-thunk nodes
-never have out-going edges in the graph, only incoming ones, if any at
-all.
-
-An edge's action~$\ottnt{A}$ indicates how the source and target nodes relate:
-\begin{itemize}
-
-\item a $\texttt{\textcolor{red}{<<no parses (char 3): get*** >>}}$ action relates a thunk to a value it reads.  If the value is
-  a thunk, it's returned like an ordinary value, and is not
-  forced. Each $\texttt{\textcolor{red}{<<no parses (char 3): get*** >>}}$ action has a \textbf{read} effect on the
-  graph, and no write (mutation) effects.
-
-\item a $\texttt{\textcolor{red}{<<no parses (char 3): put*** >>}}$ action relates a thunk to a value it writes.
-  Each $\texttt{\textcolor{red}{<<no parses (char 3): put*** >>}}$ action has a \textbf{write} effect on the graph.
-
-\item a $\texttt{\textcolor{red}{<<no parses (char 5): force*** >>}}$ action relates a thunk to another thunk it forces,
-  whose value it consumes.  Forces \textbf{read} the graph and can
-  also \textbf{write} the graph, since they read the initial
-  expression or cached result, and may also write a new cached value
-  result during incremental re-evaluation.
-  %
-  In every case, they read the result value result from the graph,
-  whether or not that result value is uncached, pre-cached (and clean)
-  or re-computed (due to being dirty).
-
-\end{itemize}
-
 
 \paragraph{Well-formed graphs.}
+
+
 To ensure that incremental evaluation always produces results
 consistent with from-scratch evaluation (a form of ``incremental
 correctness''), graphs must remain \textbf{well-formed}, an invariant
 formally required by the dynamics.
 
-Here, we give an informal description of when a graph is considered
-well formed, in preparation for making evaluation precise, guided by
-these intuitions.
+A graph is well-formed when each evaluated node has a cached result
+from some earlier run on a well-formed graph.
 %
-The full, precise definition of this condition requires that we
-precisely define a lot more first, including program evaluation (next
-section).
+That earlier run can be very out-dated with respect to the current graph.
+%
+In those cases, an additional aspect of the graph being well-formed
+also insists on the status of an edge be dirty whenever its truly
+outdated, or depends on some edge that is, transitively.
+%
+The dirty status can be overly-conservative, but it must hold
+transitively, in every case.
 
-In summary, a graph $\texttt{\textcolor{red}{<<no parses (char 1): G*** >>}}$ is well-formed when each evaluated node~$\texttt{\textcolor{red}{<<no parses (char 3): s :*** (e0, e, v, t) >>}}$ has a cached result~$\ottnt{v}$ and trace~$\ottnt{t}$ that is either:
-\begin{itemize}
-\item from-scratch consistent with $\texttt{\textcolor{red}{<<no parses (char 1): G*** >>}}$, transitively, through all of its outgoing edges, or
-\item \emph{not} consistent, but $\ottnt{s}$ has an outgoing edge marked $\ottkw{dirty}$ for each potential inconsistency among its dependencies.
-\end{itemize}
-
-More operationally, each write effect to a graph node also marks
-existing edges as $\ottkw{dirty}$ when their value differs from the write's
-value, either directly, or transitively.
-
-A directly affected node is one that directly writes or reads the
-affected target at some now-outdated value.
+More operationally, each write effect to a graph node also traverses
+the dependencies of immediately affected edges, whenever the new value
+differs from the originally-observed one on such an edge.
 %
 A transitively affected node is either a directly affected node
 itself, a node that directly forces a directly affected node, or one
 that transitively forces it.
 
-To a first approximation, graph well-formedness is just enforcing a
-kind of transitive closure of dirty flags.
-%
-We finish its informal description by informally describing its
-implementation as a \emph{dirtying traversal} that happens after each
-write that changes a node's payload.
-
-\paragraph{Dirtying traversal.}
-To implement this transitive invariant, the dirtying traversal of the
-semantics eagerly walks the graph from the target of a write, checking
-edges and marking them dirty if their value differs from the new one,
-and they are not already dirty.
-%
-It happens after each write, where necessary, before the program
-evaluation continues.
-
-For each newly dirty edge, the traversal proceeds transitively to the
-edges that target the edge's source, marking them dirty if they are
-not already dirty.
-
-In these transitive steps of the traversal, we do not check values
-(the dirty flag is an over-approximation), but we do check to see if
-edges are already dirty.
-
-The dirtying traversal ``short-circuits'' when it reaches an edge
-that's already dirty; the graph's well-formedness invariant (and its
-implementation as this traversal) ensures that this transitive closure
-has already been marked dirty, and traversing it would hence be wasted
-work (unless to check internal invariants dynamically, and provide
-extra implementation correctness assurances experimentally).
 
 \section{Graph Dynamics}
 
 \[
 \begin{array}{lc}
   {\scalebox{1.5}{
-  \boxed{[[Graph1; Path; Moment; Space |- e !! Graph2; v]]}}}
+  \boxed{[[Graph1; Path; Moment; m; Space |- e !! Graph2; v]]}}}
 &
 \begin{array}{p{4in}}
   ``
   Under initial graph~$[[Graph1]]$,
   path~$[[Path]]$,
-  space~$[[Space]]$,
-  and moment~$[[Moment]]$,\\
-  \hspace{3mm}~expression~$[[e]]$ evaluates fully,\\
-  \hspace{6mm}~resulting in graph~$[[Graph2]]$ and value~$[[v]]$.
+  space~$[[Space]]$,\\
+  \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
+  \hspace{6mm}~expression~$[[e]]$ evaluates fully,\\
+  \hspace{9mm}~resulting in graph~$[[Graph2]]$ and value~$[[v]]$.
   ''
 \end{array}
 \end{array}
@@ -718,6 +608,13 @@ extra implementation correctness assurances experimentally).
 (Compared to reference dynamics, very similar, but uses dirtying for put.)
 
 \subsection{Forcing a thunk pointer.}
+
+\begin{mathpar}
+\drule{IEXXemptyForce}
+\drule{IEXXcleanForce}
+%\drule{EXXreuseForce}
+%\drule{EXXredoForce}
+\end{mathpar}
 
 (Compared to reference dynamics, only two rules, and second one uses cleaning to always ``redo''.)
 
@@ -734,7 +631,7 @@ extra implementation correctness assurances experimentally).
 Both of the following hold:
 \begin{itemize}
 \item[(1)] $\begin{array}[t]{lcl}
-  [[Graph1; Path; Moment; Space |- e !! Graph2; v]]
+  [[Graph1; Path; Moment; m; Space |- e !! Graph2; v]]
   & \Rightarrow &
   \exists
       [[Store1]], [[Store2]].~~
@@ -748,12 +645,13 @@ Both of the following hold:
   [[Store1; Path; Moment; Space |- e !! Store2; v]]
   & \Rightarrow &
   \exists
+      [[m]],
       [[Graph1]], [[Graph2]].~~
       [[Store1 ~~ Graph1]]
       ~~\bigwedge~~ [[Store2 ~~ Graph2]]
       %\\
       %&&
-  ~~\bigwedge~~ [[Graph1; Path; Moment; Space |- e !! Graph2; v ]]
+  ~~\bigwedge~~ [[Graph1; Path; Moment; m; Space |- e !! Graph2; v ]]
   \end{array}$
 \end{itemize}
 

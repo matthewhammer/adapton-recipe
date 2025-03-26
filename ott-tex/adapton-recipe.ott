@@ -46,18 +46,23 @@ terminals :: 'terminals_' ::=
 
 formula :: 'formula_' ::=
  | judgement :: :: judgement
- | Store ( pp ) =  cell :: :: graphGetCell
+ | Store ( pp ) =  cell :: :: storeGetCell
+ | Graph ( pp ) =  node :: :: graphGetNode
+ | Graph ( ppp ) =  node :: :: graphGetNodePrecisely
+ | Graph1 = Graph2 :: :: graphEqual
  | Store1 == Store2 :: :: storeEquiv {{ tex [[Store1]] \equiv [[Store2]] }}
  | v1 = v2 :: :: equal
  | v1 /= v2 :: :: notEqualValue
  | e1 /= e2 :: :: notEqualExpression
  | d1 = d2 :: :: dimensionEqual
+ | m1 = m2 :: :: metaMomentEqual
  | StoreValueOption1 /= StoreValueOption2 :: :: notEqualValueStoreOption
  | Space1 /= Space2 :: :: notEqualSpace
  | Space1 = Space2 :: :: spaceEqual
  | Moment1 = Moment2 :: :: momentEqual
  | Moment1 != Moment2 :: :: momentNotEqual
  | pp1 = pp2 :: :: fullPointerEqual
+ | ppp1 = ppp2 :: :: reallyFullPointerEqual
  | pp \notin Path :: :: pointerNotInPath {{ tex [[pp]] \not\in [[Path]] }}
  | formula1 \/ formula2 :: :: and {{ tex [[formula1]] \bigvee [[formula2]] }}
  | ( formula ) :: :: formula {{ tex \left([[formula]]\right) }}
@@ -106,28 +111,33 @@ Moment {{ tex \psi }} :: 'Moment_' ::= {{ com Moments. }}
  | subMoment ( Moment , s ) :: M :: subMoment {{ tex [[Moment]]([[s]]) }} {{ com Submoment $[[s]]$ of moment $[[Moment]]$. }}
 
 v :: 'v_' ::= {{ com Values. }}
- | \ x . e :: :: lambda {{ com Lambda. }}
- | x :: :: var {{ com Variable. }}
- | ( v1 , v2 ) :: :: pair {{ com Pair. }}
  | thunk ( e ) :: :: thunk {{ com Thunk. }}
  | sym s :: :: symbol {{ com Symbol. }}
  | ptr p :: :: pointer {{ com Pointer. }}
  | sp Space :: :: space {{ com Space. }}
  | mt Moment :: :: moment {{ com Moment. }}
+ | vv :: :: rest {{ com (Existing value forms, from host PL.) }}
+
+vv {{ tex \cdots }} :: 'v_' ::= {{ com Values (continued). }}
+ | \ x . e :: :: lambda {{ com Lambda. }}
+ | x :: :: var {{ com Variable. }}
+ | ( v1 , v2 ) :: :: pair {{ com Pair. }}
 
 e :: 'e_' ::= {{ com Expressions. }}
+ | thunk ( e ) :: :: thunk {{ com Thunk. }}
+ | force ( e ) :: :: force {{ com Force. }}
+ | put ( e1 , e2 , e3 ) :: :: putThree {{ com Put (fully-qualified). }}
+ | put ( e1 , e2 ) :: :: putTwo {{ com Put (into current moment). }}
+ | get ( e ) :: :: get {{ com Get. }}
  | here ( ) :: :: here {{ com Here. }}
  | now ( ) :: :: now {{ com Now. }}
- | thunk ( e ) :: :: thunk {{ com Thunk. }}
  | do C ( e1 ) { e2 } :: :: do {{ com Do. }}
  | do @ e1 { e2 } :: M :: doAt {{ com Do-at. Shorthand syntax. }}
  | do @ e1 within e2 { e3 } :: M :: doAtWithin {{ com Do-at-with. Shorthand syntax. }}
  | do @ within e1 { e2 } :: M :: doAtWithin2 {{ com Do-at-with, same space. }}
- | put ( e1 , e2 , e3 ) :: :: putThree {{ com Put (fully-qualified). }}
- | put ( e1 , e2 ) :: :: putTwo {{ com Put (into current moment). }}
- | get ( e ) :: :: get {{ com Get. }}
- | force ( e ) :: :: force {{ com Force. }}
+ | ee :: :: rest {{ com (Existing expression forms, from host PL.) }}
 
+ee {{ tex \cdots }} :: 'e_' ::= {{ com Expressions (continued). }}
  | let x = e1 in e2 :: :: let {{ com Let sequencing. }}
  | let x = e1 in :: M :: letHead
  | e1 ( e2 ) :: :: apply {{ com Application. }}
@@ -153,6 +163,8 @@ CxtDim :: 'ContextDim_' ::= {{ com Context dimension. }}
 Path {{ tex \pi }} :: 'Path_' ::= {{ com Paths. }}
  | empty :: :: empty {{ tex \cdot }} {{ com Empty (no evaluating thunk pointers). }}
  | Path , pp :: :: pointer {{ com Thunk pointer~$[[pp]]$ evaluating at~$[[Path]]$. }}
+ % xxx/to do -- separate into two grammars for Path, not one fused one:
+ | Path , ppp :: :: precisePointer {{ com Thunk pointer~$[[ppp]]$ evaluating at~$[[Path]]$. }}
 
 
 %----------------------------
@@ -163,6 +175,8 @@ IncGrammar :: '' ::= {{ com \textbf{Incremental Graph Semantics} (below) }}
 %----------------------------
 
 m :: 'm_' ::= {{ com Meta-moments, as tagged natural numbers. }}
+| nextMetaMoment ( Graph ) :: :: nextMetaMoment {{ com get the next meta moment from the graph. }}
+
 n :: 'n_' ::= {{ com Edge identifers, as tagged natural numbers. }}
 
 ppp {{ tex \dot{\tilde{p} } }} , qqq {{ tex \dot{\tilde{q} } }} :: 'ppp_' ::= {{ com Graph-node pointers. }}
@@ -172,12 +186,14 @@ t :: 't_' ::= {{ com Local traces. A list of edge identifiers. }}
  | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
  | t1 , t2 :: :: sequence {{ com Sequence. }}
  | n :: :: edge {{ com Edge (identified as $[[n]]$) }}
+ | trace ( Graph , ppp ) :: M :: getTrace {{ com get a node's trace from graph. }}
 
 Graph {{ tex G }} :: 'Graph_' ::= {{ com Graphs. }}
  | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
  | Graph1 , Graph2 :: :: union {{ com Disjoint union. }} {{ tex [[Graph1]] \cupdot [[Graph2]] }}
  | ppp |-> node :: :: node {{ com Graph node (cell). }}
  | n |-> edge :: :: edge {{ com Graph edge. }}
+ | Graph { ppp |-> node } :: M :: nodeUpdate
 
 node :: 'node_' ::= {{ com Nodes (graph cells). }}
  | NonThunk v :: :: NonThunk {{ com Non-thunk. }} {{ tex [[v]] }}
@@ -270,7 +286,7 @@ Store1 ; Path ; Moment ; Space |- do goto moment(e1) { e2 } !! Store4 ; v
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
 (subSpace(Space, s), Moment)^st \notin Path
----------------------------------------------------------------------------------------------------------------- :: putImm
+---------------------------------------------------------------------------------------------------------------- :: putImmediate
 Store1 ; Path ; Moment ; Space |- put (e1, e2) !! Store3{ (subSpace(Space, s), Moment)^st |->(Space, v) } ; ptr subSpace(Space,s)
 
 
@@ -390,15 +406,44 @@ pp |-> cell <= pp |-> cell
 pp |-> Thunk(Space,e,empty) <= pp |-> Thunk(Space,e,(Store,v))
 
 
-
 defns Inc :: '' ::=
 
 defn
-Graph1 ; Path ; Moment ; Space |- e !! Graph2 ; v
+Graph1 ; Path ; Moment ; m ; Space |- e !! Graph2 ; v
 :: :: incEval :: 'IE_'
-{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]]} [[e]] \Downarrow [[Graph2]] ; [[v]] }}
+{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} [[e]] \Downarrow [[Graph2]] ; [[v]] }}
 by
 
+Graph1; Path; Moment; m; Space1 |- e !! Graph2; ptr Space2
+ppp = ((Space2, Moment)^st, m)
+Graph2(ppp) = Thunk(Space0, e0, empty)
+Graph2; Path, ppp; Moment; m; Space0 |- e0 !! Graph3; v
+Graph4 = Graph3{ ppp |-> Thunk(Space0, e0, (trace(Graph3, ppp), v)) }
+------------------------------------------------------------------------------------------------------------- :: emptyForce
+Graph1; Path; Moment; m; Space1 |- force(e) !! Graph4; v
+
+Graph1; Path; Moment; m; Space1 |- e !! Graph2; ptr Space2
+ppp = ((Space2, Moment)^st, m)
+Graph2(ppp) = Thunk(Space0, e0, (t0, v0))
+nextMetaMoment(Graph2) = m'
+ppp' = ((Space2, Moment)^st, m')
+Graph2; Path, ppp'; Moment; m'; Space0 |- clean((Space2, Moment)^st) !! Graph3
+Graph3((Space2, Moment)^st) = Thunk(Space0, e0, (t, v))
+--------------------------------------------------------------------------------- :: cleanForce
+Graph1; Path; Moment; m; Space1 |- force(e) !! Graph3; v
+
+
+defn
+Graph1 ; Path ; Moment ; m ; Space |- clean ( t ) !! Graph2
+:: :: cleanTrace :: 'CleanTrace_'
+{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[t]]) \Downarrow [[Graph2]] }}
+by
+
+defn
+Graph1 ; Path ; Moment ; m ; Space |- clean ( pp ) !! Graph2
+:: :: cleanNode :: 'CleanNode_'
+{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[pp]]) \Downarrow [[Graph2]] }}
+by
 
 
 defn

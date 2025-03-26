@@ -631,7 +631,7 @@ that transitively forces it.
 Both of the following hold:
 \begin{itemize}
 \item[(1)] $\begin{array}[t]{lcl}
-  [[Graph1; Path; Moment; m; Space |- e !! Graph2; v]]
+  [[Graph1; Path; Moment; m; Space |- e !! Graph2; t; v]]
   & \Rightarrow &
   \exists
       [[Store1]], [[Store2]].~~
@@ -645,13 +645,13 @@ Both of the following hold:
   [[Store1; Path; Moment; Space |- e !! Store2; v]]
   & \Rightarrow &
   \exists
-      [[m]],
+      [[m]], [[t]],
       [[Graph1]], [[Graph2]].~~
       [[Store1 ~~ Graph1]]
       ~~\bigwedge~~ [[Store2 ~~ Graph2]]
       %\\
       %&&
-  ~~\bigwedge~~ [[Graph1; Path; Moment; m; Space |- e !! Graph2; v ]]
+  ~~\bigwedge~~ [[Graph1; Path; Moment; m; Space |- e !! Graph2; t; v ]]
   \end{array}$
 \end{itemize}
 

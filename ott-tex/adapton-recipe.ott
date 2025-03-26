@@ -66,6 +66,7 @@ formula :: 'formula_' ::=
  | pp \notin Path :: :: pointerNotInPath {{ tex [[pp]] \not\in [[Path]] }}
  | formula1 \/ formula2 :: :: and {{ tex [[formula1]] \bigvee [[formula2]] }}
  | ( formula ) :: :: formula {{ tex \left([[formula]]\right) }}
+ | addEdge ( Graph1 , edge ) = ( Graph2 , n ) :: M :: addEdge
 
 s :: 's_' ::= {{ com Symbols. }}
  | literal :: :: literal {{ tex \cdots }} {{ com Literal number, string, or symbol (program identifier). }}
@@ -181,6 +182,7 @@ n :: 'n_' ::= {{ com Edge identifers, as tagged natural numbers. }}
 
 ppp {{ tex \dot{\tilde{p} } }} , qqq {{ tex \dot{\tilde{q} } }} :: 'ppp_' ::= {{ com Graph-node pointers. }}
  | ( pp , m ) :: :: pointer {{ com Full pointer~$[[pp]]$ at meta-moment~$[[m]]$ }}
+ | top ( Path ) :: M :: topOfPath {{ com Top of path. }}
 
 t :: 't_' ::= {{ com Local traces. A list of edge identifiers. }}
  | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
@@ -309,7 +311,7 @@ Store1 ; Path ; Moment ; Space1 |- get(e) !! Store2 ; (sp Space0, thunk(e0))
 
 
 
-Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
+Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0 
 Store2((Space0, Moment)^st) = Thunk(Space2, e0, empty)
 Store2 ; Path, (Space0, Moment)^st ; Moment ; Space2 |- e0 !! Store3 ; v
 ----------------------------------------------------------------------------------------- :: emptyForce
@@ -409,28 +411,27 @@ pp |-> Thunk(Space,e,empty) <= pp |-> Thunk(Space,e,(Store,v))
 defns Inc :: '' ::=
 
 defn
-Graph1 ; Path ; Moment ; m ; Space |- e !! Graph2 ; v
+Graph1 ; Path ; Moment ; m ; Space |- e !! Graph2 ; t ; v
 :: :: incEval :: 'IE_'
-{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} [[e]] \Downarrow [[Graph2]] ; [[v]] }}
+{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} [[e]] \Downarrow [[Graph2]]; [[t]]; [[v]] }}
 by
 
-Graph1; Path; Moment; m; Space1 |- e !! Graph2; ptr Space2
+Graph1; Path; Moment; m; Space1 |- e !! Graph2; t; ptr Space2
 ppp = ((Space2, Moment)^st, m)
 Graph2(ppp) = Thunk(Space0, e0, empty)
-Graph2; Path, ppp; Moment; m; Space0 |- e0 !! Graph3; v
-Graph4 = Graph3{ ppp |-> Thunk(Space0, e0, (trace(Graph3, ppp), v)) }
+Graph2; Path, ppp; Moment; m; Space0 |- e0 !! Graph3; t3; v3
+addEdge(Graph3{ ppp |-> Thunk(Space0, e0, (t3, v3)) }, top(Path)--force(v3)--clean--> (Space2, Moment)^st) = (Graph4, n)
 ------------------------------------------------------------------------------------------------------------- :: emptyForce
-Graph1; Path; Moment; m; Space1 |- force(e) !! Graph4; v
+Graph1; Path; Moment; m; Space1 |- force(e) !! Graph4; t, n; v
 
-Graph1; Path; Moment; m; Space1 |- e !! Graph2; ptr Space2
+Graph1; Path; Moment; m; Space1 |- e !! Graph2; t; ptr Space2
 ppp = ((Space2, Moment)^st, m)
 Graph2(ppp) = Thunk(Space0, e0, (t0, v0))
-nextMetaMoment(Graph2) = m'
-ppp' = ((Space2, Moment)^st, m')
-Graph2; Path, ppp'; Moment; m'; Space0 |- clean((Space2, Moment)^st) !! Graph3
-Graph3((Space2, Moment)^st) = Thunk(Space0, e0, (t, v))
+Graph2; Path; Moment; m; Space0 |- clean((Space2, Moment)^st) !! Graph3
+Graph3((Space2, Moment)^st) = Thunk(Space0, e0, (t3, v3))
+addEdge(Graph3{ ppp |-> Thunk(Space0, e0, (t3, v3)) }, top(Path)--force(v3)--clean--> (Space2, Moment)^st) = (Graph4, n)
 --------------------------------------------------------------------------------- :: cleanForce
-Graph1; Path; Moment; m; Space1 |- force(e) !! Graph3; v
+Graph1; Path; Moment; m; Space1 |- force(e) !! Graph4; t, n; v
 
 
 defn

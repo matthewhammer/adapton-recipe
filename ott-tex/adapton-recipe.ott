@@ -49,6 +49,7 @@ formula :: 'formula_' ::=
  | Store ( pp ) =  cell :: :: storeGetCell
  | Graph ( pp ) =  node :: :: graphGetNode
  | Graph ( ppp ) =  node :: :: graphGetNodePrecisely
+ | Graph ( n ) = edge :: :: graphGetEdge
  | Graph1 = Graph2 :: :: graphEqual
  | Store1 == Store2 :: :: storeEquiv {{ tex [[Store1]] \equiv [[Store2]] }}
  | v1 = v2 :: :: equal
@@ -123,6 +124,8 @@ vv {{ tex \cdots }} :: 'v_' ::= {{ com Values (continued). }}
  | \ x . e :: :: lambda {{ com Lambda. }}
  | x :: :: var {{ com Variable. }}
  | ( v1 , v2 ) :: :: pair {{ com Pair. }}
+ | value ( Graph , pp ) :: M :: valueOfGraphNode {{ com Value of graph node~$[[pp]]$ in graph~$[[Graph]]$. }}
+ | value ( A ) :: M :: valueOfEdgeAction {{ com Value of edge action $[[A]]$. }}
 
 e :: 'e_' ::= {{ com Expressions. }}
  | thunk ( e ) :: :: thunk {{ com Thunk. }}
@@ -196,6 +199,7 @@ Graph {{ tex G }} :: 'Graph_' ::= {{ com Graphs. }}
  | ppp |-> node :: :: node {{ com Graph node (cell). }}
  | n |-> edge :: :: edge {{ com Graph edge. }}
  | Graph { ppp |-> node } :: M :: nodeUpdate
+ | Graph { n |-> edge } :: M :: edgeUpdate
 
 node :: 'node_' ::= {{ com Nodes (graph cells). }}
  | NonThunk v :: :: NonThunk {{ com Non-thunk. }} {{ tex [[v]] }}
@@ -436,9 +440,51 @@ Graph1; Path; Moment; m; Space1 |- force(e) !! Graph4; t, n; v
 
 defn
 Graph1 ; Path ; Moment ; m ; Space |- clean ( t ) !! Graph2
-:: :: cleanTrace :: 'CleanTrace_'
+:: :: cleanTrace :: 'CT_'
 {{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[t]]) \Downarrow [[Graph2]] }}
 by
+
+------------------------------------------------------------- :: empty
+Graph ; Path ; Moment ; m ; Space |- clean ( empty ) !! Graph
+
+Graph1 ; Path ; Moment ; m ; Space |- clean ( t1 ) !! Graph2
+Graph2 ; Path ; Moment ; m ; Space |- clean ( t2 ) !! Graph3
+----------------------------------------------------------------- :: binary
+Graph1 ; Path ; Moment ; m ; Space |- clean ( t1, t2 ) !! Graph3
+
+
+Graph(n) = ppp -- A -- clean --> qq
+------------------------------------------------------- :: alreadyClean
+Graph ; Path ; Moment ; m ; Space |- clean(n) !! Graph
+
+Graph1(n) = ppp -- A -- dirty --> qq
+Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2
+value(A) = value(Graph2, qq)
+Graph3 = Graph2{ n |-> ppp --A--clean--> qq }
+----------------------------------------------------------- :: dirtyIntoClean
+Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph3
+
+defn
+Graph1 ; Path ; Moment ; m ; Space |- misaligned ( t ) !! Graph2
+:: :: misaligned :: 'MA_'
+{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{misaligned}([[t]]) \Downarrow [[Graph2]] }}
+by
+
+Graph2 ; Path ; Moment ; m ; Space |- misaligned ( t1 ) !! Graph2
+---------------------------------------------------------------------- :: binL
+Graph1 ; Path ; Moment ; m ; Space |- misaligned ( t1, t2 ) !! Graph2
+
+Graph1 ; Path ; Moment ; m ; Space |- clean ( t1 ) !! Graph2
+Graph2 ; Path ; Moment ; m ; Space |- misaligned ( t2 ) !! Graph3
+--------------------------------------------------------------------- :: binR
+Graph1 ; Path ; Moment ; m ; Space |- misaligned ( t1, t2 ) !! Graph3
+
+Graph1(n) = ppp -- A -- dirty --> qq
+Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2
+value(A) /= value(Graph2, qq)
+--------------------------------------------------------------- :: edge
+Graph1 ; Path ; Moment ; m ; Space |- misaligned(n) !! Graph2
+
 
 defn
 Graph1 ; Path ; Moment ; m ; Space |- clean ( pp ) !! Graph2

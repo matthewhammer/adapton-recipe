@@ -203,17 +203,19 @@ create larger ones.
 Essentially, the chance to compose distinct systems stems from the choice of moments
 and space to each be \emph{nestable} (or \emph{fractal}) in nature.
 
+\nolinenumbers
 \ottgrammartabular{
-  \ottSpace
+  {\makeLineNumber\stepLineNumber} \ottSpace
   \\
-  \ottMoment
+   {\makeLineNumber\stepLineNumber} \ottMoment
   \\
-  \ottp
+   {\makeLineNumber\stepLineNumber} \ottp
   \\
-  \ottpp
+   {\makeLineNumber\stepLineNumber} \ottpp
   \\
-  \ottd
+  {\makeLineNumber\stepLineNumber} \ottd
 }
+\linenumbers
 
 Programs using EAR have control over space and time in ways
 that ordinary programs do not.
@@ -534,13 +536,23 @@ structure.
 
 \ottgrammartabular{
   \ottppp
-  \\
+}
+
+\paragraph{Nodes.}
+
+\ottgrammartabular{
   \ottnode
   \\
   \ottcache
   \\
   \ottt
-  \\
+}
+
+The local trace~$[[t]]$ of each node gives a local ordering to the edges whose source is that node.
+
+\paragraph{Edges.}
+
+\ottgrammartabular{
   \ottedge
   \\
   \ottA
@@ -548,13 +560,8 @@ structure.
   \ottb
 }
 
-\paragraph{Nodes.}
-
-\paragraph{Edges.}
 
 \paragraph{Well-formed graphs.}
-
-
 To ensure that incremental evaluation always produces results
 consistent with from-scratch evaluation (a form of ``incremental
 correctness''), graphs must remain \textbf{well-formed}, an invariant
@@ -620,6 +627,31 @@ that transitively forces it.
 
 \subsection{Cleaning.}
 
+Cleaning begins at a node under demand (via some force), and has the
+potential to include a full traversal of that node's dependencies in
+the graph.
+%
+To the extent that the graph's edges are already clean, the cleaning
+algorithm avoids a full graph traversal.
+%
+By some combination of confirming that the graph is clean, and by
+replacing misaligned traces with new evaluation, cleaning a node
+brings its cached trace and value into alignment with the rest of the
+graph.
+%
+Critically, the order of the cleaning traversal respects the order of
+demand in a from-scratch evaluation.
+
+\paragraph{Cleaning nodes.}
+When the recipe cleans a node, it does so because that node is under
+demand, either directly (via some force being evaluated by the
+program), or transitively, by some node that is being directly
+demanded.
+%
+Depending on the status of its local trace edges, there are several
+possible situations, each captured by one rule below.
+
+
 \[
 \begin{array}{lc}
   {\scalebox{1.5}{
@@ -639,6 +671,38 @@ that transitively forces it.
 \end{array}
 \]
 
+% xxx
+
+First, the local edges of a node may all be cleanable, either because
+they are already clean, or because one or more were previously marked
+dirty but are now consistent with their dependencies, and thus may now
+be marked clean.
+%
+This case of a cleanable node trace~$[[t]]$ (and the subcases just
+mentioned) are captured by the judgement~$[[Graph1; Path; Moment; m;
+    Space |- clean(t) !! Graph2]]$.
+
+% xxx
+
+Second, at least one edge may not be cleanable because it witnesses an
+effect with an outdated value.
+%
+The judgement~$[[Graph1; Path; Moment; m; Space |- notCleanable(n) !! Graph2]]$
+captures this situation for an edge named~$[[n]]$, and it assumes that
+all the dependencies for $[[n]]$ have already been cleaned, somehow.
+
+
+\paragraph{Cleaning traces.}
+The judgement~$[[Graph1; Path; Moment; m; Space |- clean(t) !!
+    Graph2]]$ defines the cleaning traversal in terms of the original
+order of demand, as witnessed by the local trace~$[[t]]$ of each node
+under demand.
+%
+The cases are based on the structure of~$[[t]]$,
+with two cases for a single edge identifier~$[[n]]$, depending on
+its status being dirty or clean.
+
+
 \[
 \begin{array}{lc}
   {\scalebox{1.5}{
@@ -657,6 +721,32 @@ that transitively forces it.
 \end{array}
 \end{array}
 \]
+
+\begin{mathpar}
+\drule{CTXXempty}
+\drule{CTXXbinary}
+\end{mathpar}
+
+\begin{mathpar}
+\drule{CTXXalreadyClean}
+\drule{CTXXdirtyIntoClean}
+\end{mathpar}
+
+When dirty~(rule CTXXdirtyIntoClean), the rule recurs into cleaning
+the target node, and then insists that the edge-action and target-node
+values match (see premise $[[value(A) = value(Graph2, qq)]]$).
+%
+It relies on this fact to justify updating the edge status to be
+clean.
+
+This cleaning judgement is not derivable for any edge when this pair of values
+do not match, after visiting the edge target.
+%
+Instead, the cleaning traversal derives $[[Graph1; Path; Moment; m;
+    Space |- misaligned(n) !! Graph2]]$ for this ``misaligned'' edge,
+and reevalutes the node to replace its local trace with updated edges,
+and updated actions and action-values, wherein the value pairs across each edge are each matching.
+
 
 \subsection{Undelay.}
 

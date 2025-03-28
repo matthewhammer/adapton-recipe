@@ -439,6 +439,27 @@ Graph1; Path; Moment; m; Space1 |- force(e) !! Graph4; t, n; v
 
 
 defn
+Graph1 ; Path ; Moment ; m ; Space |- clean ( pp ) !! Graph2
+:: :: cleanNode :: 'CN_'
+{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[pp]]) \Downarrow [[Graph2]] }}
+by
+
+Graph1(pp) = Thunk(Space, e0, (t0, v0))
+Graph1 ; Path ; Moment ; m ; Space |- clean ( t0 ) !! Graph2
+-------------------------------------------------------------- :: aligned
+Graph1 ; Path ; Moment ; m ; Space |- clean ( pp ) !! Graph2
+
+
+Graph1(pp) = Thunk(Space0, e0, (t0, v0))
+Graph1 ; Path ; Moment ; m1 ; Space |- misaligned( t0 ) !! Graph2
+nextMetaMoment(Graph2) = m2
+Graph2 ; Path ; Moment ; m2 ; Space0 |- e0 !! Graph3; t3; v3
+Graph3{ (pp, m2) |-> Thunk(Space, e0, (t3, v3)) } = Graph4
+------------------------------------------------------------------- :: misaligned
+Graph1 ; Path ; Moment ; m1 ; Space |- clean ( pp ) !! Graph4
+
+
+defn
 Graph1 ; Path ; Moment ; m ; Space |- clean ( t ) !! Graph2
 :: :: cleanTrace :: 'CT_'
 {{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[t]]) \Downarrow [[Graph2]] }}
@@ -464,6 +485,7 @@ Graph3 = Graph2{ n |-> ppp --A--clean--> qq }
 ----------------------------------------------------------- :: dirtyIntoClean
 Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph3
 
+
 defn
 Graph1 ; Path ; Moment ; m ; Space |- misaligned ( t ) !! Graph2
 :: :: misaligned :: 'MA_'
@@ -484,13 +506,6 @@ Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2
 value(A) /= value(Graph2, qq)
 --------------------------------------------------------------- :: edge
 Graph1 ; Path ; Moment ; m ; Space |- misaligned(n) !! Graph2
-
-
-defn
-Graph1 ; Path ; Moment ; m ; Space |- clean ( pp ) !! Graph2
-:: :: cleanNode :: 'CleanNode_'
-{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[pp]]) \Downarrow [[Graph2]] }}
-by
 
 
 defn

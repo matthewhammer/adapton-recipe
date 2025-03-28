@@ -648,9 +648,9 @@ demand, either directly (via some force being evaluated by the
 program), or transitively, by some node that is being directly
 demanded.
 %
-Depending on the status of its local trace edges, there are several
-possible situations, each captured by one rule below.
-
+Depending on the status of its local trace edges, there are two
+possible situations, which correspond to the node being ``aligned
+with'' or ``misaligned with'' its dependencies in the graph.
 
 \[
 \begin{array}{lc}
@@ -673,23 +673,45 @@ possible situations, each captured by one rule below.
 
 % xxx
 
-First, the local edges of a node may all be cleanable, either because
-they are already clean, or because one or more were previously marked
-dirty but are now consistent with their dependencies, and thus may now
-be marked clean.
+\Rref{CN-aligned} captures the case where a node is ``aligned with''
+its dependencies in graph.
 %
-This case of a cleanable node trace~$[[t]]$ (and the subcases just
-mentioned) are captured by the judgement~$[[Graph1; Path; Moment; m;
-    Space |- clean(t) !! Graph2]]$.
+The derivation~$[[Graph1; Path; Moment; m; Space |- clean(t) !!
+    Graph2]]$ means that each edge in local trace~$[[t]]$ is either
+clean or cleanable, and in particular, that the value of its action is
+consistent with the current graph.
 
-% xxx
+\begin{mathpar}
+  \drule{CNXXaligned}
+  \drule{CNXXmisaligned}
+\end{mathpar}
 
-Second, at least one edge may not be cleanable because it witnesses an
-effect with an outdated value.
+\Rref{CN-misaligned} captures the opposite case, where at least one
+local edge is not cleanable because it witnesses an action with an
+outdated value.
 %
-The judgement~$[[Graph1; Path; Moment; m; Space |- notCleanable(n) !! Graph2]]$
-captures this situation for an edge named~$[[n]]$, and it assumes that
-all the dependencies for $[[n]]$ have already been cleaned, somehow.
+The judgement~$[[Graph1; Path; Moment; m; Space |- misaligned(t) !!
+    Graph2]]$ captures this situation for a trace~$[[t]]$ that contains this edge.
+%
+The derivations of this judgement are structurally similar to those of
+$[[Graph1; Path; Moment; m; Space |- clean(t) !!  Graph2]]$, except
+that here, the derivations always end with exactly one edge that
+cannot be cleaned.
+%
+We call this trace and its edge ``misaligned'' because they cannot be ``aligned with''
+(reconciled with) the current graph.
+%
+In these situations, the graph node is generally misaligned with the graph as well, with an outdated value.
+
+To clean the node, the rule replaces the old trace with an updated one
+from an updated evaluation.
+%
+This new evaluation occurs with an advanced meta moment, and the rule
+updates the trace and value for the node by including this advanced
+meta moment in the new graph node pointer.
+%
+Each distinct meta moment in the graph corresponds to the use of this
+rule, the only rule that advances it.
 
 
 \paragraph{Cleaning traces.}
@@ -732,21 +754,58 @@ its status being dirty or clean.
 \drule{CTXXdirtyIntoClean}
 \end{mathpar}
 
-When dirty~(rule CTXXdirtyIntoClean), the rule recurs into cleaning
-the target node, and then insists that the edge-action and target-node
-values match (see premise $[[value(A) = value(Graph2, qq)]]$).
+\Rref{CT-dirtyIntoClean} recurs into cleaning the edge's target node,
+and afterward, the rule insists that the edge-action and target-node
+values match, via premise $[[value(A) = value(Graph2, qq)]]$.
 %
-It relies on this fact to justify updating the edge status to be
+The rule relies on this fact to justify updating the edge status to be
 clean.
 
 This cleaning judgement is not derivable for any edge when this pair of values
-do not match, after visiting the edge target.
+fail to match after cleaning the edge's target node.
 %
 Instead, the cleaning traversal derives $[[Graph1; Path; Moment; m;
     Space |- misaligned(n) !! Graph2]]$ for this ``misaligned'' edge,
-and reevalutes the node to replace its local trace with updated edges,
-and updated actions and action-values, wherein the value pairs across each edge are each matching.
+and reevalutes its source node to replace it.
+%
+See \rref{CN-misaligned}, discussed above.
 
+
+\paragraph{Partial cleaning and misaligned traces.}
+The judgement~$[[Graph1; Path; Moment; m; Space |- misaligned(t) !!
+    Graph2]]$ defines a variation of the cleaning traversal that is
+partial and incomplete.
+%
+Each derivation corresponds to a cleaning traversal that terminates
+early because exactly one edge cannot be cleaned by either cleaning
+rule for edges.
+
+\[
+\begin{array}{lc}
+  {\scalebox{1.5}{
+  \boxed{[[Graph1; Path; Moment; m; Space |- misaligned(t) !! Graph2]]}}}
+&
+\begin{array}{p{4in}}
+  ``
+  Under initial graph~$[[Graph1]]$,
+  path~$[[Path]]$,
+  space~$[[Space]]$,\\
+  \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
+  \hspace{6mm}~trace~$[[t]]$ cleans partially, \emph{not fully},
+  \\\hspace{9mm}~
+  resulting in graph~$[[Graph2]]$.
+  ''
+\end{array}
+\end{array}
+\]
+
+\[
+\drule{MAXXedge}
+\]
+\begin{mathpar}
+\drule{MAXXbinL}
+\drule{MAXXbinR}
+\end{mathpar}
 
 \subsection{Undelay.}
 

@@ -509,6 +509,41 @@ Graph1 ; Path ; Moment ; m ; Space |- misaligned(n) !! Graph2
 
 
 defn
+Graph1 ; Path ; Moment ; m ; Space |- clean ( t ) !! Graph2 ; b
+:: :: revisedCleanTrace :: 'R_CT_'
+{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[t]]) \Downarrow [[Graph2]] ; [[b]] }}
+by
+
+----------------------------------------------------------------------- :: empty
+Graph ; Path ; Moment ; m ; Space |- clean ( empty ) !! Graph ; clean
+
+Graph2 ; Path ; Moment ; m ; Space |- clean ( t1 ) !! Graph2 ; dirty
+------------------------------------------------------------------------------ :: binL
+Graph1 ; Path ; Moment ; m ; Space |- clean ( t1, t2 ) !! Graph2 ; dirty
+
+Graph1 ; Path ; Moment ; m ; Space |- clean ( t1 ) !! Graph2 ; clean
+Graph2 ; Path ; Moment ; m ; Space |- clean ( t2 ) !! Graph3 ; b
+------------------------------------------------------------------------- :: binR
+Graph1 ; Path ; Moment ; m ; Space |- clean ( t1, t2 ) !! Graph3 ; b
+
+Graph(n) = ppp -- A -- clean --> qq
+--------------------------------------------------------------- :: alreadyClean
+Graph ; Path ; Moment ; m ; Space |- clean(n) !! Graph ; clean
+
+Graph1(n) = ppp -- A -- dirty --> qq
+Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2
+value(A) = value(Graph2, qq)
+Graph3 = Graph2{ n |-> ppp --A--clean--> qq }
+------------------------------------------------------------------------ :: dirtyIntoClean
+Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph3 ; clean
+
+Graph1(n) = ppp -- A -- dirty --> qq
+Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2
+value(A) /= value(Graph2, qq)
+------------------------------------------------------------------- :: misaligned
+Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph2 ; dirty
+
+defn
 Graph1 <= Graph2
 :: :: incAligned :: 'IA_'
 {{ tex [[Graph1]] \leq [[Graph2]] }}

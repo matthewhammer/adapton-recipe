@@ -218,6 +218,10 @@ A :: 'A_' ::= {{ com Actions (and relevant values). }}
  | get ( v ) :: :: get {{ com Get value~$[[v]]$. }}
  | force ( v ) :: :: force {{ com Force edge target, resulting in~$[[v]]$. }}
 
+DirtyActionPattern {{ tex \hat{A} }} :: 'Apat_' ::= {{ com Action patterns, for dirtying traversal. }}
+ | misaligned ( Space , v ) :: :: misaligned {{ com Matches all actions misaligned with putting $([[Space]], [[v]])$. }}
+ | forces :: :: forcing {{ com Matches all $\ottkw{force}$ actions, and no $\ottkw{put}$ nor $\ottkw{get}$ actions. }}
+
 b :: 'b_' ::= {{ com Status bit. }}
  | clean :: :: clean {{ com Clean. }}
  | dirty :: :: dirty {{ com Dirty. }}
@@ -542,6 +546,18 @@ Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2
 value(A) /= value(Graph2, qq)
 ------------------------------------------------------------------- :: misaligned
 Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph2 ; dirty
+
+
+defn
+Graph1 |- dirty ( ppp ) !! Graph2
+:: :: dirtyNode :: 'DN_'
+by
+
+defn
+Graph1 |- dirty ( DirtyActionPattern , t ) !! Graph2
+:: :: dirtyTrace :: 'DT_'
+by
+
 
 defn
 Graph1 <= Graph2

@@ -21,6 +21,8 @@ terminals :: 'terminals_' ::=
 | |- :: :: vdash {{ tex \vdash }}
 | != :: :: noteq {{ tex  \neq }}
 | /= :: :: noteqSlash {{ tex  \neq }}
+| ~~ :: :: approx {{ tex  \approx }}
+| ~/~ :: :: notApprox {{ tex \not\approx }}
 
 % | == :: :: equiv {{ tex \equiv }}
 % | forall :: :: forall {{ tex \forall }}
@@ -68,6 +70,7 @@ formula :: 'formula_' ::=
  | formula1 \/ formula2 :: :: and {{ tex [[formula1]] \bigvee [[formula2]] }}
  | ( formula ) :: :: formula {{ tex \left([[formula]]\right) }}
  | addEdge ( Graph1 , edge ) = ( Graph2 , n ) :: M :: addEdge
+
 
 s :: 's_' ::= {{ com Symbols. }}
  | literal :: :: literal {{ tex \cdots }} {{ com Literal number, string, or symbol (program identifier). }}
@@ -192,6 +195,7 @@ t :: 't_' ::= {{ com Local traces. A list of edge identifiers. }}
  | t1 , t2 :: :: sequence {{ com Sequence. }}
  | n :: :: edge {{ com Edge (identified as $[[n]]$) }}
  | trace ( Graph , ppp ) :: M :: getTrace {{ com get a node's trace from graph. }}
+ | incomingEdges ( Graph , ppp ) :: M :: incomingEdges {{ com Incoming edges of node~$[[ppp]]$, in an arbitrary order. }}
 
 Graph {{ tex G }} :: 'Graph_' ::= {{ com Graphs. }}
  | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
@@ -549,15 +553,55 @@ Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph2 ; dirty
 
 
 defn
-Graph1 |- dirty ( ppp ) !! Graph2
-:: :: dirtyNode :: 'DN_'
+DirtyActionPattern ~~ A
+:: :: actionMatches :: 'AM_'
 by
 
 defn
-Graph1 |- dirty ( DirtyActionPattern , t ) !! Graph2
-:: :: dirtyTrace :: 'DT_'
+DirtyActionPattern ~/~ A
+:: :: actionDoesNotMatch :: 'ANM_'
 by
 
+
+defn
+Graph1 |- dirty ( DirtyActionPattern , ppp ) !! Graph2
+:: :: dirtyNode :: 'Dirty_'
+by
+
+Graph1 |- dirty ( DirtyActionPattern , incomingEdges(Graph1, ppp) ) !! Graph2
+------------------------------------------------------------------------------ :: node
+Graph1 |- dirty ( DirtyActionPattern , ppp ) !! Graph2
+
+defn
+Graph1 |- dirty ( DirtyActionPattern , t ) !! Graph2
+:: :: dirtyTrace :: 'Dirty_'
+by
+
+-------------------------------------------------- :: empty
+Graph |- dirty(DirtyActionPattern, empty) !! Graph
+
+Graph1 |- dirty(DirtyActionPattern, t1) !! Graph2
+Graph2 |- dirty(DirtyActionPattern, t2) !! Graph3
+------------------------------------------------------ :: binary
+Graph1 |- dirty(DirtyActionPattern, t1,t2) !! Graph3
+
+
+Graph(n) = ppp --A--dirty--> qq
+------------------------------------------------ :: alreadyDirty
+Graph |- dirty(DirtyActionPattern, n) !! Graph
+
+
+Graph1(n) = ppp --A--clean--> qq
+DirtyActionPattern ~~ A
+Graph2 = Graph1{ n |-> ppp --A--dirty--> qq }
+Graph2 |- dirty(forces, ppp) !! Graph3
+------------------------------------------------- :: cleanToDirty
+Graph1 |- dirty(DirtyActionPattern, n) !! Graph3
+
+Graph(n) = ppp --A--clean--> qq
+DirtyActionPattern ~/~ A
+------------------------------------------------- :: stillClean
+Graph |- dirty(DirtyActionPattern, n) !! Graph
 
 defn
 Graph1 <= Graph2

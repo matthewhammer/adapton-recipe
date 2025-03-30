@@ -445,9 +445,9 @@ For the latter, the operation returns a pair that includes the space value used 
   & \drule{EXXhere}
   & \drule{EXXnow}
   \\[2mm]
-  \hline
-  &&
-  \\[2mm]
+%  \hline
+%  &&
+%  \\[2mm]
   
   \texttt{goto}
   &
@@ -455,9 +455,9 @@ For the latter, the operation returns a pair that includes the space value used 
   &
   \drule{EXXgotoMoment}
   \\[2mm]
-  \hline
-  &&
-  \\[2mm]
+%  \hline
+%  &&
+%  \\[2mm]
 
   \texttt{within}
   &
@@ -587,6 +587,71 @@ A transitively affected node is either a directly affected node
 itself, a node that directly forces a directly affected node, or one
 that transitively forces it.
 
+\subsection{Dirtying.}
+
+\[
+\begin{array}{lc}
+  {\scalebox{1.5}{
+  \boxed{[[Graph1 |- dirty ( DirtyActionPattern , ppp ) !! Graph2]]}}}
+&
+\begin{array}{p{4in}}
+  ``Dirtying edges that match pattern~$[[DirtyActionPattern]]$,\\
+  \hspace{4mm}~that target node~$[[pp]]$ in graph $[[Graph1]]$ yields graph~$[[Graph2]]$.''
+\end{array}
+\end{array}
+\]
+
+\[
+\begin{array}{lc}
+  {\scalebox{1.5}{
+  \boxed{[[Graph1 |- dirty ( DirtyActionPattern , t ) !! Graph2]]}}}
+&
+\begin{array}{p{4in}}
+  ``Dirtying incoming edge set~$[[t]]$ in $[[Graph1]]$\\
+  \hspace{4mm}~that match pattern~$[[DirtyActionPattern]]$ yields graph~$[[Graph2]]$.''
+\end{array}
+\end{array}
+\]
+
+\subsection{Cleaning.}
+
+\[
+\begin{array}{lc}
+  {\scalebox{1.5}{
+  \boxed{[[Graph1; Path; Moment; m; Space |- clean(pp) !! Graph2]]}}}
+&
+\begin{array}{p{4in}}
+  ``
+  Under initial graph~$[[Graph1]]$,
+  path~$[[Path]]$,
+  space~$[[Space]]$,\\
+  \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
+  \hspace{6mm}~pointer~$[[pp]]$ cleans fully,
+  resulting in graph~$[[Graph2]]$.
+  ''
+\end{array}
+\end{array}
+\]
+
+\[
+\begin{array}{lc}
+  {\scalebox{1.5}{
+  \boxed{[[Graph1; Path; Moment; m; Space |- clean(t) !! Graph2; b]]}}}
+&
+\begin{array}{p{4in}}
+  ``
+  Under initial graph~$[[Graph1]]$,
+  path~$[[Path]]$,
+  space~$[[Space]]$,\\
+  \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
+  \hspace{6mm}~cleaning trace~$[[t]]$
+  results in status~$[[b]]$ and graph~$[[Graph2]]$.
+  ''
+\end{array}
+\end{array}
+\]
+
+
 
 \section{Graph Dynamics}
 
@@ -622,8 +687,6 @@ that transitively forces it.
 \end{mathpar}
 
 (Compared to reference dynamics, only two rules, and second one uses cleaning to always ``redo''.)
-
-\subsection{Dirtying.}
 
 \subsection{Cleaning.}
 

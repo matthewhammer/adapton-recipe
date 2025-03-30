@@ -23,6 +23,8 @@ terminals :: 'terminals_' ::=
 | /= :: :: noteqSlash {{ tex  \neq }}
 | ~~ :: :: approx {{ tex  \approx }}
 | ~/~ :: :: notApprox {{ tex \not\approx }}
+| (( :: :: lparen {{ tex {\texttt (} }}
+| )) :: :: rparen {{ tex {\texttt )} }}
 
 % | == :: :: equiv {{ tex \equiv }}
 % | forall :: :: forall {{ tex \forall }}
@@ -116,7 +118,7 @@ Moment {{ tex \psi }} :: 'Moment_' ::= {{ com Moments. }}
  | subMoment ( Moment , s ) :: M :: subMoment {{ tex [[Moment]]([[s]]) }} {{ com Submoment $[[s]]$ of moment $[[Moment]]$. }}
 
 v :: 'v_' ::= {{ com Values. }}
- | thunk ( e ) :: :: thunk {{ com Thunk. }}
+ | thunk (( e )) :: :: thunk {{ com Thunk. }}
  | sym s :: :: symbol {{ com Symbol. }}
  | ptr p :: :: pointer {{ com Pointer. }}
  | sp Space :: :: space {{ com Space. }}
@@ -126,19 +128,19 @@ v :: 'v_' ::= {{ com Values. }}
 vv {{ tex \cdots }} :: 'v_' ::= {{ com Values (continued). }}
  | \ x . e :: :: lambda {{ com Lambda. }}
  | x :: :: var {{ com Variable. }}
- | ( v1 , v2 ) :: :: pair {{ com Pair. }}
+ | (( v1 , v2 )) :: :: pair {{ com Pair. }}
  | value ( Graph , pp ) :: M :: valueOfGraphNode {{ com Value of graph node~$[[pp]]$ in graph~$[[Graph]]$. }}
  | value ( A ) :: M :: valueOfEdgeAction {{ com Value of edge action $[[A]]$. }}
 
 e :: 'e_' ::= {{ com Expressions. }}
- | thunk ( e ) :: :: thunk {{ com Thunk. }}
- | force ( e ) :: :: force {{ com Force. }}
- | put ( e1 , e2 , e3 ) :: :: putThree {{ com Put (fully-qualified). }}
- | put ( e1 , e2 ) :: :: putTwo {{ com Put (into current moment). }}
- | get ( e ) :: :: get {{ com Get. }}
- | here ( ) :: :: here {{ com Here. }}
- | now ( ) :: :: now {{ com Now. }}
- | do C ( e1 ) { e2 } :: :: do {{ com Do. }}
+ | thunk (( e )) :: :: thunk {{ com Thunk. }}
+ | force (( e )) :: :: force {{ com Force. }}
+ | put (( e1 , e2 , e3 )) :: :: putThree {{ com Put (fully-qualified). }}
+ | put (( e1 , e2 )) :: :: putTwo {{ com Put (into current moment). }}
+ | get (( e )) :: :: get {{ com Get. }}
+ | here (( )) :: :: here {{ com Here. }}
+ | now (( )) :: :: now {{ com Now. }}
+ | do C (( e1 )) { e2 } :: :: do {{ com Do. }}
  | do @ e1 { e2 } :: M :: doAt {{ com Do-at. Shorthand syntax. }}
  | do @ e1 within e2 { e3 } :: M :: doAtWithin {{ com Do-at-with. Shorthand syntax. }}
  | do @ within e1 { e2 } :: M :: doAtWithin2 {{ com Do-at-with, same space. }}
@@ -239,19 +241,19 @@ Store1 ; Path ; Moment ; Space |- e !! Store2 ; v
 by
 
 ------------------------------------------------------------- :: here
-Store ; Path ; Moment ; Space |- here() !! Store ; sp Space
+Store ; Path ; Moment ; Space |- here(()) !! Store ; sp Space
 
 ------------------------------------------------------------- :: now
-Store ; Path ; Moment ; Space |- now() !! Store ; mt Moment
+Store ; Path ; Moment ; Space |- now(()) !! Store ; mt Moment
 
----------------------------------------------------------------- :: thunk
-Store ; Path ; Moment ; Space |- thunk(e) !! Store ; thunk(e)
+------------------------------------------------------------------ :: thunk
+Store ; Path ; Moment ; Space |- thunk((e)) !! Store ; thunk((e))
 
 
-Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; thunk(e2)
+Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; thunk((e2))
 Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
 ------------------------------------------------------------ :: forceThunk
-Store1 ; Path ; Moment ; Space |- force(e1) !! Store3 ; v
+Store1 ; Path ; Moment ; Space |- force((e1)) !! Store3 ; v
 
 
 
@@ -271,55 +273,55 @@ Store ; Path ; Moment ; Space |- e1 . e2 !! Store ; sym s1.s2
 Store ; Path ; Moment ; Space |- e1 !! Store ; sym s1
 Store ; Path ; Moment ; Space |- e2 !! Store ; sym s2
 --------------------------------------------------------------- :: symApp
-Store ; Path ; Moment ; Space |- e1(e2) !! Store ; sym s1(s2)
+Store ; Path ; Moment ; Space |- e1((e2)) !! Store ; sym s1(s2)
 
 
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment ; subSpace(Space, s) |- e2 !! Store3 ; v
 --------------------------------------------------------------------------- :: withinSpace
-Store1 ; Path ; Moment ; Space |- do within space(e1) { e2 } !! Store3 ; v
+Store1 ; Path ; Moment ; Space |- do within space((e1)) { e2 } !! Store3 ; v
 
 Store1 ; Path ; Moment ; Space1 |- e1 !! Store2 ; sp Space2
 Store2 ; Path ; Moment ; Space2 |- e2 !! Store3 ; v
 --------------------------------------------------------------------------- :: gotoSpace
-Store1 ; Path ; Moment ; Space1 |- do goto space(e1) { e2 } !! Store3 ; v
+Store1 ; Path ; Moment ; Space1 |- do goto space((e1)) { e2 } !! Store3 ; v
 
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
 Store2 |- undelay(Store2, subMoment(Moment, s)) !! Store3
 Store3 ; Path ; subMoment(Moment, s) ; Space |- e2 !! Store4 ; v
 --------------------------------------------------------------------------- :: withinMoment
-Store1 ; Path ; Moment ; Space |- do within moment(e1) { e2 } !! Store4 ; v
+Store1 ; Path ; Moment ; Space |- do within moment((e1)) { e2 } !! Store4 ; v
 
 Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; mt Moment2
 Store2 |- undelay(Store2, Moment2) !! Store3
 Store3 ; Path ; Moment2 ; Space |- e2 !! Store4 ; v
 --------------------------------------------------------------------------- :: gotoMoment
-Store1 ; Path ; Moment ; Space |- do goto moment(e1) { e2 } !! Store4 ; v
+Store1 ; Path ; Moment ; Space |- do goto moment((e1)) { e2 } !! Store4 ; v
 
 
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
 (subSpace(Space, s), Moment)^st \notin Path
 ---------------------------------------------------------------------------------------------------------------- :: putImmediate
-Store1 ; Path ; Moment ; Space |- put (e1, e2) !! Store3{ (subSpace(Space, s), Moment)^st |->(Space, v) } ; ptr subSpace(Space,s)
+Store1 ; Path ; Moment ; Space |- put ((e1, e2)) !! Store3{ (subSpace(Space, s), Moment)^st |->(Space, v) } ; ptr subSpace(Space,s)
 
 
 Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment1 ; Space |- e2 !! Store3 ; v
-Store3 ; Path ; Moment1 ; Space |- e2 !! Store4 ; mt Moment2
+Store3 ; Path ; Moment1 ; Space |- e3 !! Store4 ; mt Moment2
 --------------------------------------------------------------------------------------------------------------- :: putDelay
-Store ; Path ; Moment1 ; Space |- put (e1, e2) !! Store4{ (subSpace(Space, s), Moment2)^ts |->(Space, v) } ; ptr subSpace(Space,s)
+Store ; Path ; Moment1 ; Space |- put ((e1, e2, e3)) !! Store4{ (subSpace(Space, s), Moment2)^ts |->(Space, v) } ; ptr subSpace(Space,s)
 
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space2
 Store2((Space2, Moment)^st) = NonThunk v
 -------------------------------------------------------------------- :: getNonThunk
-Store1 ; Path ; Moment ; Space1 |- get(e) !! Store2 ; v
+Store1 ; Path ; Moment ; Space1 |- get((e)) !! Store2 ; v
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space2
 Store2((Space2, Moment)^st) = Thunk(Space0, e0, StoreValueOption)
 ------------------------------------------------------------------------------ :: getThunk
-Store1 ; Path ; Moment ; Space1 |- get(e) !! Store2 ; (sp Space0, thunk(e0))
+Store1 ; Path ; Moment ; Space1 |- get((e)) !! Store2 ; ((sp Space0, thunk((e0))))
 
 
 
@@ -327,20 +329,20 @@ Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
 Store2((Space0, Moment)^st) = Thunk(Space2, e0, empty)
 Store2 ; Path, (Space0, Moment)^st ; Moment ; Space2 |- e0 !! Store3 ; v
 ----------------------------------------------------------------------------------------- :: emptyForce
-Store1 ; Path ; Moment ; Space1 |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(Space2, e0, (Store2, v)) } ; v
+Store1 ; Path ; Moment ; Space1 |- force((e)) !! Store3{ (Space0, Moment)^st |-> Thunk(Space2, e0, (Store2, v)) } ; v
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
 Store2((Space0, Moment)^st) = Thunk(Space2, e0, (Store0, v))
 Store0 <= Store2
 --------------------------------------------------------- :: reuseForce
-Store1 ; Path ; Moment ; Space1 |- force(e) !! Store2 ; v
+Store1 ; Path ; Moment ; Space1 |- force((e)) !! Store2 ; v
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space0
 Store2((Space0, Moment)^st) = Thunk(Space2, e0, (Store0, v0))
 Store0 </= Store2
 Store2 ; Path, (Space0, Moment)^st ; Moment ; Space2 |- e0 !! Store3 ; v
 ---------------------------------------------------------------------------------------- :: redoForce
-Store1 ; Path ; Moment ; Space1 |- force(e) !! Store3{ (Space0, Moment)^st |-> Thunk(Space2, e0, (Store2, v)) } ; v
+Store1 ; Path ; Moment ; Space1 |- force((e)) !! Store3{ (Space0, Moment)^st |-> Thunk(Space2, e0, (Store2, v)) } ; v
 
 
 defn
@@ -434,7 +436,7 @@ Graph2(ppp) = Thunk(Space0, e0, empty)
 Graph2; Path, ppp; Moment; m; Space0 |- e0 !! Graph3; t3; v3
 addEdge(Graph3{ ppp |-> Thunk(Space0, e0, (t3, v3)) }, top(Path)--force(v3)--clean--> (Space2, Moment)^st) = (Graph4, n)
 ------------------------------------------------------------------------------------------------------------- :: emptyForce
-Graph1; Path; Moment; m; Space1 |- force(e) !! Graph4; t, n; v
+Graph1; Path; Moment; m; Space1 |- force((e)) !! Graph4; t, n; v
 
 Graph1; Path; Moment; m; Space1 |- e !! Graph2; t; ptr Space2
 ppp = ((Space2, Moment)^st, m)
@@ -443,7 +445,7 @@ Graph2; Path; Moment; m; Space0 |- clean((Space2, Moment)^st) !! Graph3
 Graph3((Space2, Moment)^st) = Thunk(Space0, e0, (t3, v3))
 addEdge(Graph3{ ppp |-> Thunk(Space0, e0, (t3, v3)) }, top(Path)--force(v3)--clean--> (Space2, Moment)^st) = (Graph4, n)
 --------------------------------------------------------------------------------- :: cleanForce
-Graph1; Path; Moment; m; Space1 |- force(e) !! Graph4; t, n; v
+Graph1; Path; Moment; m; Space1 |- force((e)) !! Graph4; t, n; v
 
 
 defn

@@ -23,8 +23,12 @@ terminals :: 'terminals_' ::=
 | /= :: :: noteqSlash {{ tex  \neq }}
 | ~~ :: :: approx {{ tex  \approx }}
 | ~/~ :: :: notApprox {{ tex \not\approx }}
-| (( :: :: lparen {{ tex {\texttt (} }}
-| )) :: :: rparen {{ tex {\texttt )} }}
+
+| (( :: :: lparen {{ tex \texttt{(\!\!\!(} }}
+| )) :: :: rparen {{ tex \texttt{)\!\!\!)} }}
+
+| ({( :: :: lbrace {{ tex \{\!\!\!\{ }}
+| )}) :: :: rbrace {{ tex \}\!\!\!\} }}
 
 % | == :: :: equiv {{ tex \equiv }}
 % | forall :: :: forall {{ tex \forall }}
@@ -140,21 +144,21 @@ e :: 'e_' ::= {{ com Expressions. }}
  | get (( e )) :: :: get {{ com Get. }}
  | here (( )) :: :: here {{ com Here. }}
  | now (( )) :: :: now {{ com Now. }}
- | do C (( e1 )) { e2 } :: :: do {{ com Do. }}
- | do @ e1 { e2 } :: M :: doAt {{ com Do-at. Shorthand syntax. }}
- | do @ e1 within e2 { e3 } :: M :: doAtWithin {{ com Do-at-with. Shorthand syntax. }}
- | do @ within e1 { e2 } :: M :: doAtWithin2 {{ com Do-at-with, same space. }}
+ | do C (( e1 )) ({( e2 )}) :: :: do {{ com Do. }}
+ | do @ e1 ({( e2 )}) :: M :: doAt {{ com Do-at. Shorthand syntax. }}
+ | do @ e1 within e2 ({( e3 )}) :: M :: doAtWithin {{ com Do-at-with. Shorthand syntax. }}
+ | do @ within e1 ({( e2 )}) :: M :: doAtWithin2 {{ com Do-at-with, same space. }}
  | ee :: :: rest {{ com (Existing expression forms, from host PL.) }}
 
 ee {{ tex \cdots }} :: 'e_' ::= {{ com Expressions (continued). }}
  | let x = e1 in e2 :: :: let {{ com Let sequencing. }}
  | let x = e1 in :: M :: letHead
- | e1 ( e2 ) :: :: apply {{ com Application. }}
+ | e1 (( e2 )) :: :: apply {{ com Application. }}
  | e1 - e2 :: :: symbolDash {{ com Minus binop. }}
  | e1 . e2 :: :: symbolDot {{ com Dot binop. }}
  | [ v / x ] e :: M :: subst {{ com Substituion. }}
  | v :: :: value {{ com Value. }}
- | ( e ) :: M :: paren {{ com Paren. }}
+ | (( e )) :: M :: paren {{ com Paren. }}
 
 
 C :: 'C_' ::= {{ com Do context. }}
@@ -279,24 +283,24 @@ Store ; Path ; Moment ; Space |- e1((e2)) !! Store ; sym s1(s2)
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment ; subSpace(Space, s) |- e2 !! Store3 ; v
 --------------------------------------------------------------------------- :: withinSpace
-Store1 ; Path ; Moment ; Space |- do within space((e1)) { e2 } !! Store3 ; v
+Store1 ; Path ; Moment ; Space |- do within space((e1))({(e2)}) !! Store3 ; v
 
 Store1 ; Path ; Moment ; Space1 |- e1 !! Store2 ; sp Space2
 Store2 ; Path ; Moment ; Space2 |- e2 !! Store3 ; v
 --------------------------------------------------------------------------- :: gotoSpace
-Store1 ; Path ; Moment ; Space1 |- do goto space((e1)) { e2 } !! Store3 ; v
+Store1 ; Path ; Moment ; Space1 |- do goto space((e1))({(e2)}) !! Store3 ; v
 
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
 Store2 |- undelay(Store2, subMoment(Moment, s)) !! Store3
 Store3 ; Path ; subMoment(Moment, s) ; Space |- e2 !! Store4 ; v
 --------------------------------------------------------------------------- :: withinMoment
-Store1 ; Path ; Moment ; Space |- do within moment((e1)) { e2 } !! Store4 ; v
+Store1 ; Path ; Moment ; Space |- do within moment((e1))({(e2)}) !! Store4 ; v
 
 Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; mt Moment2
 Store2 |- undelay(Store2, Moment2) !! Store3
 Store3 ; Path ; Moment2 ; Space |- e2 !! Store4 ; v
 --------------------------------------------------------------------------- :: gotoMoment
-Store1 ; Path ; Moment ; Space |- do goto moment((e1)) { e2 } !! Store4 ; v
+Store1 ; Path ; Moment ; Space |- do goto moment((e1))({(e2)}) !! Store4 ; v
 
 
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s

@@ -301,11 +301,11 @@ immediately forcing it's evaluation (the body~$[[e2]]$):
 
 \[
 \begin{array}{lcl}
-  [[do @e1 { e2 }]]
+  [[do @e1 ({( e2 )}) ]]
   &\equiv&
-  [[let x = put(e1, thunk(e2)) in]]
+  [[let x = put((e1, thunk((e2)))) in]]
   \\
-  &&[[force(x)]]
+  &&[[force((x))]]
 \end{array}
 \]
 
@@ -315,11 +315,11 @@ certain subspace:
 
 \[
 \begin{array}{lcl}
-  [[do @e1 within e2 { e3 }]]
+  [[do @e1 within e2 ({( e3 )})]]
   &\equiv&
-  [[let x = put(e1, thunk(do within space (e2){e3})) in]]
+  [[let x = put((e1, thunk((do within space ((e2))({(e3)}) )))) in]]
   \\
-  &&[[force(x)]]
+  &&[[force((x))]]
 \end{array}
 \]
 
@@ -329,11 +329,11 @@ as the thunk-naming symbol to name this subspace:
 
 \[
 \begin{array}{lcl}
-  [[do @within e1 { e2 }]]
+  [[do @within e1 ({( e2 )})]]
   &\equiv&
-  [[let x = put(e1, thunk(do within space (e1){e2})) in]]
+  [[let x = put((e1, thunk((do within space ((e1))({(e2)}))))) in]]
   \\
-  &&[[force(x)]]
+  &&[[force((x))]]
 \end{array}
 \]
 
@@ -421,9 +421,9 @@ There are two temporal cases for putting a value into the store (immediate in sp
 %
 Each value put into the store can either be a thunk or a non-thunk value.
 For a thunk, the store update syntax $[[Store{pp |-> (Space, v)}]]$
-means that $[[v = thunk(e)]]$ for some expression~$[[e]]$,
+means that $[[v = thunk((e))]]$ for some expression~$[[e]]$,
 and this update is defined as $[[Store{pp |-> Thunk(Space, e, empty)}]]$.
-Alternatively, when $[[v /= thunk(e)]]$, 
+Alternatively, when $[[v /= thunk((e))]]$, 
 the update ignores the space~$[[Space]]$ and is defined instead as $[[Store{pp |-> NonThunk v}]]$.
 
 For the two \texttt{get} rules, the store access $[[Store((Space2, Moment) ^ st) = cell]]$ compares the current moment~$[[Moment]]$ to those written at the given space~$[[Space2]]$, choosing the ``latest'' cell whose moment is equal to or earlier than~$[[Moment]]$, if it exists.

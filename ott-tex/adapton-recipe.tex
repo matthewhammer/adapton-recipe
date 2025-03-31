@@ -160,11 +160,173 @@ ways:
 Adapton prescribes a general way to augment a functional
 programming language with primitives to handle these read and write effects.
 
+The purpose of this document is to communicate the \emph{Extended Adapton Recipe} (EAR) in a way that's useful for\begin{itemize}
+\item[(a)] PL researchers that are curious about DCGs and/or Adapton,
+\item[(b)] language engineers with control over some host PL and an interest in making a subset of that PL into an ``incremental PL'', and
+\item[(c)] users of this recipe, trying to create programs or libraries that use it, in whatever domain excites them most.
+\end{itemize}
 
-\section{Symbols}
+The first two groups use formal semantics as mathematical tools for communication, as does this document.
+%
+For the third group, the document will provide example programs with technical illustrations of
+their evaluation in the formal semantics, and thus their ``behind the scenes'' behavior in terms of the DCG.
+
+Note to draft reader: There is a pending implementation of this formal
+semantics (including DCGs), and sections about it will also be added to the document
+when they are ready for that. For now, the document focuses on the
+\emph{formal semantics} of the recipe, and less so on any specific
+\emph{implementation} of it.
+  
+\paragraph{Formal semantics for the recipe.}
+%
+Programs in this recipe have a pair of closely-related formal semantics: a
+\emph{reference dynamics} that affords a limited form of incremental
+reuse, and a \emph{graphical dynamics} that that is arguably more practical
+and more incremental.
+
+While the graphical dynamics describes demanded computation graphs, the
+reference dynamics describes a more limited flavor of caching that is
+intolerant of most effects, except for the effect of updating the
+cache with otherwise-pure computation results.
+
+The role of the reference dynamics is to \begin{itemize}
+  \item[(1)] introduce the ``symbolic space-time'' semantics
+    of the new read and write primitives, and
+  \item[(2)] capture a familar\footnote{The author believes that this form of caching is modeling something like that found in Haskell, or even in NIX, where either isolation, or freedom from most changes (a form of purity), is required to reuse a subcomputation}, but also \emph{limited}
+    form of caching that lacks dependence graphs.
+\end{itemize}
+
+The reference dynamics gives a basis for comparison with the graphical dynamics, and its increased complexity of rules.
+    %
+    It acts a specification for the input-output behavior we expect in our (more complex) graphical dynamics,
+    and our meta theory will\footnote{Pending work.} aim to prove that the graphical dynamics is consistent with the reference semantics, and vice-versa.
+
+\paragraph{Organization.}
+This document is organized as follows:
+
+\begin{itemize}
+
+\item Section \ref{sec:symbolic-space-and-time} introduces the idea of symbols and their possible program syntax.  We introduce the idea of the ``symbolic store'' used by the reference semantics.  The graphical semantics builds on these ideas and adds the concept of recording evaluation traces for these store effects.
+  
+\item Section \ref{sec:programs} gives some prototypical syntax
+  extensions for working with symbolic space and time.
+  %
+  This section gives just enough detail to
+  formalize the pair of dynamics (reference and graphical) in
+  subsequent sections.
+  %
+  In practice,
+  the new syntax for \ottkw{put}, \ottkw{get}, and \ottkw{force} may
+  repurpose some existing syntax in the host PL, rather than use these
+  particular keywords.  
+
+\item Section \ref{sec:reference-dynamics} presents the reference dynamics.
+
+\item Section \ref{sec:graphical-dynamics} presents the graphical dynamics.
+
+\item Section \ref{sec:from-scratch-consistency} presents a meta theory
+  about the pair of theories, for reference and graphical dynamics.
+  %
+  It claims that each derivation in one corresponds
+  to at least one derivation in the other.  Because the reference
+  dynamics enforces a strict notion of reuse, this claim implies that
+  the graphical semantics is always ``from-scratch consistent'' with
+  full re-evaluation.
+
+\item Note to (draft) reader: There is a pending implementation.  Once more
+  complete, sections about that would include a description of it, and
+  an experimental evaluation with practical time and space
+  measurements.
+  
+\end{itemize}
+
+
+\section{Symbolic Space and Time}
+\label{sec:symbolic-space-and-time}
+
+This Adapton recipe uses the notion of ``symbols''.
+%
+Earlier Adapton publications called these identifiers ``names'', and
+the role and purpose is the same here: to name distinct ``positions''
+within the changing data structures, and also the changing DCG living
+behind the scenes.
+
+Informally, these symbols (or ``names'') identify distinct positions
+in space, and distinct steps in time, in a way where ``similar''
+evaluations will use ``similar'' names for ``similar'' purposes.
+%
+Unlike prior versions of Adapton, this recipe embraces the idea of
+naming time, not just space, and permitting multiple versions of the
+past or future to coexist and reuse each other's redundant graphical
+structures.
+%
+As a first step towards presenting these ideas, we initially focus on
+the reference semantics and its symbolic store (ignoring graphs, for
+now).
+
+In the reference semantics, there is no DCG and the symbols help the
+program identify distinct memory cells at distinct moments in time.
+%
+At each such position in space and time, there may be a stored cell
+that contains a non-thunk value or a thunk:
+
+
+\ottgrammartabular{\ottStore}
+\ottgrammartabular{\ottcell}
+\ottgrammartabular{\ottStoreValueOption}
+
+Each store~$[[Store]]$ is a finite map (a partial map) that sends each space-time pointer~$[[pp]]$
+defined by the program to a stored cell~$[[cell]]$.
+%
+Non-thunk cells hold values.
+
+Each thunk cell stores a triple that includes the current space, the thunk body, and the evaluation cache.
+%
+The thunk's space~$[[Space]]$ corresponds to the current
+space when the thunk was defined, but can be changed by the thunk's body during
+evaluation freely if necessary.
+%
+In UNIX terms, this space is akin to the ``working directory'' to be
+used by the program when it first begins; as with UNIX programs, these
+thunks can create subspaces (``subdirectories'') and/or may go to
+other already-existing spaces as well.
+
+The cache of each thunk cell~$[[StoreValueOption]]$ has one of two states:
+Empty cache ($[[empty]]$) or
+filled cache ($[[(Store, v)]]$).
+%
+The filled cache state records an the a store snapshot~$[[Store]]$
+just before that thunk last ran, and the result value~$[[v]]$ of that
+run.
+
+The notion of cache reuse within the reference semantics requires that the current
+store be an ``aligned extension'' of the store snapshot from when the
+thunk last ran.
+%
+This aligned-store extension relationship permits no
+mutable effects other than thunk evaluation, making it considerably
+more limited than the graphical semantics, which uses
+the graphical structure of the DCG to identify fine-grained
+opportunities for reuse, and if necessary, repair.
+
+The structure of the graph is motivated by the need to avoid the
+various inpracticalities of the reference semantics, but retain its input-output behavior.
+%
+Indeed, we intend to prove (proof pending) that every derivation in
+the reference semantics has a corresponding derivation in the
+graphical semantics, and vice versa; the difference is that the
+derivations in the graphical semantics will always be similar to or smaller than
+those of the reference semantics in size, and sometimes \emph{much} smaller.
+%
+This compression in derivation size comes from the ability of the
+graph to always facilitate equivalent, or more, patterns of cache reuse.
+
+The next subsections introduce the formal syntax for symbols, spaces, moments (of time) and pointers.
+
+\subsection{Symbols}
 \label{sec:symbols}
 
-This Adapton recipe uses the notion of ``symbols.'' A symbol is a
+A symbol is a
 unique identifier, determined dynamically by a running program, or fed
 as part of its input, or some combination of those two methods.
 %
@@ -194,13 +356,12 @@ names in UNIX, where dashes and dots are common word separators.
 %
 We use the application form to indicate sub-spaces and sub-moments.
 
-\section{Symbolic Space and Time.}
-\label{sec:symbolic-space-and-time}
+\subsection{Symbolic pointers.}
 
-Each program or library that uses the Extended Adapton Recipe (EAR)
+Each program or library that uses this recipe
 defines a system of symbolic names for space and time.
 The details of this system are program/library-specific, and the
-design of EAR itself affords a chance to compose distinct systems to
+design of the recipe itself affords a chance to compose distinct systems to
 create larger ones.
 Essentially, the chance to compose distinct systems stems from the choice of moments
 and space to each be \emph{nestable} (or \emph{fractal}) in nature.
@@ -219,7 +380,7 @@ and space to each be \emph{nestable} (or \emph{fractal}) in nature.
 }
 \linenumbers
 
-Programs using EAR have control over space and time in ways
+Programs using this recipe have control over space and time in ways
 that ordinary programs do not.
 %
 One aspect of this control is the distinction between
@@ -236,9 +397,13 @@ When the program navigates time, this data that is ``becoming'' part
 of the target moment transitions atomically into what ``is'' at that
 target moment where the program arrives.
 %
-See Sections~\ref{sec:refsem-navigation} and~\ref{sec:refsem-undelay}.
+Sections~\ref{sec:refsem-navigation} and~\ref{sec:refsem-undelay}
+define the reference semantics for navigating space and time, including
+how time navigation ``buffers'' updates in a separate region.
+
 
 \section{Programs}
+\label{sec:programs}
 
 The Adapton recipe we present here assumes a CBV host language, with a
 pre-existing model of common language features, such as recursive data
@@ -340,22 +505,7 @@ as the thunk-naming symbol to name this subspace:
 \]
 
 \section{Reference Dynamics}
-
-Programs here have a reference dynamics and an incremental dynamics.
-
-While the incremental dynamics describes dependence graphs, the
-reference dynamics describes a more limited flavor of caching that is
-intolerant of most effects (except for the effect of updating the
-cache with otherwise-pure computation results).
-
-The role of the reference dynamics is to capture this limited form of
-caching that lacks dependence graphs, giving a basis for comparison
-for the incremental dynamics that requires and uses dependence graphs
-throughout.
-
-\ottgrammartabular{\ottStore}
-\ottgrammartabular{\ottcell}
-\ottgrammartabular{\ottStoreValueOption}
+\label{sec:reference-dynamics}
 
 \[
 \begin{array}{lc}
@@ -527,7 +677,11 @@ For the latter, the operation returns a pair that includes the space value used 
   \drule{NAXXforgot}
 \end{mathpar}
 
-\section{Graphs}
+\section{Graphical dynamics}
+\label{sec:graphical-dynamics}
+
+\subsection{Graphs}
+\label{sec:graphs}
 
 A graph $[[Graph]]$ consists of nodes and edges.
 %
@@ -755,6 +909,8 @@ While cleaning nodes, there are two cases: Nodes that are aligned
 \drule{CNXXmisaligned}
 \end{mathpar}
 
+(Compared to reference dynamics, there are only two rules, and second one uses cleaning to always ``redo''.)
+
 Algorithmically, the ``alignment'' of the node is a function of its trace, and is indicated by the final status of cleaning that trace under the current graph.
 %
 When $[[clean]]$, we say that the node is still \emph{aligned with the graph}.
@@ -763,6 +919,30 @@ Otherwise, when $[[dirty]]$, we say that the node is \emph{misaligned} with the 
 To remedy the latter situation, the cleaning algorithm replaces misaligned traces with updates ones,
 based on re-evaluating the node under the current graph (see \rref{CN-misaligned}).
 %
+
+\Rref{CN-misaligned} captures the case of a misaligned node, where at least one
+local edge is not cleanable because it witnesses an action with an
+outdated value.
+%
+The judgement~$[[Graph1; Path; Moment; m; Space |- clean(t) !!
+    Graph2; dirty]]$ captures this situation for a trace~$[[t]]$ that contains this edge.
+%
+We call this trace and its edge ``misaligned'' because they cannot be ``aligned with''
+(reconciled with) the current graph.
+%
+In these situations, the graph node is generally misaligned with the graph as well, with an outdated value.
+
+To clean the node, the rule replaces the old trace with an updated one
+from an updated evaluation.
+%
+This new evaluation occurs with an advanced meta moment, and the rule
+updates the trace and value for the node by including this advanced
+meta moment in the new graph node pointer.
+%
+Each distinct meta moment in the graph corresponds to the use of this
+rule, the only rule that advances it.
+
+
 The following relation specifies how to clean a node's trace~$[[t]]$, either fully or partially,
 thereby determining which node cleaning rule applies.
 
@@ -813,7 +993,7 @@ To procede with cleaning the source node~$[[ppp]]$, this misaligned edge~$[[n]]$
 replaced by a use of \rref{CN-misaligned}, which will replace each
 immediate action of~$[[pp]]$ with an updated (aligned) action/edge.
 
-\section{Graph Dynamics}
+\subsection{Graphical evaluation}
 
 \[
 \begin{array}{lc}
@@ -846,195 +1026,12 @@ immediate action of~$[[pp]]$ with an updated (aligned) action/edge.
 %\drule{EXXredoForce}
 \end{mathpar}
 
-(Compared to reference dynamics, only two rules, and second one uses cleaning to always ``redo''.)
-
-\subsection{OLD: Cleaning.}
-
-Cleaning begins at a node under demand (via some force), and has the
-potential to include a full traversal of that node's dependencies in
-the graph.
-%
-To the extent that the graph's edges are already clean, the cleaning
-algorithm avoids a full graph traversal.
-%
-By some combination of confirming that the graph is clean, and by
-replacing misaligned traces with new evaluation, cleaning a node
-brings its cached trace and value into alignment with the rest of the
-graph.
-%
-Critically, the order of the cleaning traversal respects the order of
-demand in a from-scratch evaluation.
-
-\paragraph{OLD: Cleaning nodes.}
-When the recipe cleans a node, it does so because that node is under
-demand, either directly (via some force being evaluated by the
-program), or transitively, by some node that is being directly
-demanded.
-%
-Depending on the status of its local trace edges, there are two
-possible situations, which correspond to the node being ``aligned
-with'' or ``misaligned with'' its dependencies in the graph.
-
-\[
-\begin{array}{lc}
-  {\scalebox{1.5}{
-  \boxed{[[Graph1; Path; Moment; m; Space |- clean(pp) !! Graph2]]}}}
-&
-\begin{array}{p{4in}}
-  ``
-  Under initial graph~$[[Graph1]]$,
-  path~$[[Path]]$,
-  space~$[[Space]]$,\\
-  \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
-  \hspace{6mm}~pointer~$[[pp]]$ cleans fully,
-  %\\\hspace{9mm}~
-  resulting in graph~$[[Graph2]]$.
-  ''
-\end{array}
-\end{array}
-\]
-
-% xxx
-
-\Rref{CN-aligned} captures the case where a node is ``aligned with''
-its dependencies in graph.
-%
-The derivation~$[[Graph1; Path; Moment; m; Space |- clean(t) !!
-    Graph2]]$ means that each edge in local trace~$[[t]]$ is either
-clean or cleanable, and in particular, that the value of its action is
-consistent with the current graph.
-
-\begin{mathpar}
-  \drule{CNXXaligned}
-  \drule{CNXXmisaligned}
-\end{mathpar}
-
-\Rref{CN-misaligned} captures the opposite case, where at least one
-local edge is not cleanable because it witnesses an action with an
-outdated value.
-%
-The judgement~$[[Graph1; Path; Moment; m; Space |- misaligned(t) !!
-    Graph2]]$ captures this situation for a trace~$[[t]]$ that contains this edge.
-%
-The derivations of this judgement are structurally similar to those of
-$[[Graph1; Path; Moment; m; Space |- clean(t) !!  Graph2]]$, except
-that here, the derivations always end with exactly one edge that
-cannot be cleaned.
-%
-We call this trace and its edge ``misaligned'' because they cannot be ``aligned with''
-(reconciled with) the current graph.
-%
-In these situations, the graph node is generally misaligned with the graph as well, with an outdated value.
-
-To clean the node, the rule replaces the old trace with an updated one
-from an updated evaluation.
-%
-This new evaluation occurs with an advanced meta moment, and the rule
-updates the trace and value for the node by including this advanced
-meta moment in the new graph node pointer.
-%
-Each distinct meta moment in the graph corresponds to the use of this
-rule, the only rule that advances it.
-
-
-\paragraph{OLD: Cleaning traces.}
-The judgement~$[[Graph1; Path; Moment; m; Space |- clean(t) !!
-    Graph2]]$ defines the cleaning traversal in terms of the original
-order of demand, as witnessed by the local trace~$[[t]]$ of each node
-under demand.
-%
-The cases are based on the structure of~$[[t]]$,
-with two cases for a single edge identifier~$[[n]]$, depending on
-its status being dirty or clean.
-
-
-\[
-\begin{array}{lc}
-  {\scalebox{1.5}{
-  \boxed{[[Graph1; Path; Moment; m; Space |- clean(t) !! Graph2]]}}}
-&
-\begin{array}{p{4in}}
-  ``
-  Under initial graph~$[[Graph1]]$,
-  path~$[[Path]]$,
-  space~$[[Space]]$,\\
-  \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
-  \hspace{6mm}~trace~$[[t]]$ cleans fully,
-  %\\\hspace{9mm}~
-  resulting in graph~$[[Graph2]]$.
-  ''
-\end{array}
-\end{array}
-\]
-
-\begin{mathpar}
-\drule{CTXXempty}
-\drule{CTXXbinary}
-\end{mathpar}
-
-\begin{mathpar}
-\drule{CTXXalreadyClean}
-\drule{CTXXdirtyIntoClean}
-\end{mathpar}
-
-\Rref{CT-dirtyIntoClean} recurs into cleaning the edge's target node,
-and afterward, the rule insists that the edge-action and target-node
-values match, via premise $[[value(A) = value(Graph2, qq)]]$.
-%
-The rule relies on this fact to justify updating the edge status to be
-clean.
-
-This cleaning judgement is not derivable for any edge when this pair of values
-fail to match after cleaning the edge's target node.
-%
-Instead, the cleaning traversal derives $[[Graph1; Path; Moment; m;
-    Space |- misaligned(n) !! Graph2]]$ for this ``misaligned'' edge,
-and reevalutes its source node to replace it.
-%
-See \rref{CN-misaligned}, discussed above.
-
-
-\paragraph{OLD: Partial cleaning and misaligned traces.}
-The judgement~$[[Graph1; Path; Moment; m; Space |- misaligned(t) !!
-    Graph2]]$ defines a variation of the cleaning traversal that is
-partial and incomplete.
-%
-Each derivation corresponds to a cleaning traversal that terminates
-early because exactly one edge cannot be cleaned by either cleaning
-rule for edges.
-
-\[
-\begin{array}{lc}
-  {\scalebox{1.5}{
-  \boxed{[[Graph1; Path; Moment; m; Space |- misaligned(t) !! Graph2]]}}}
-&
-\begin{array}{p{4in}}
-  ``
-  Under initial graph~$[[Graph1]]$,
-  path~$[[Path]]$,
-  space~$[[Space]]$,\\
-  \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
-  \hspace{6mm}~trace~$[[t]]$ cleans partially, \emph{not fully},
-  \\\hspace{9mm}~
-  resulting in graph~$[[Graph2]]$.
-  ''
-\end{array}
-\end{array}
-\]
-
-\[
-\drule{MAXXedge}
-\]
-\begin{mathpar}
-\drule{MAXXbinL}
-\drule{MAXXbinR}
-\end{mathpar}
-
 \subsection{Undelay.}
 
 (Compared to reference dynamics, very similar, but uses dirtying.)
 
 \section{From-scratch Consistency}
+\label{sec:from-scratch-consistency}
 
 Both of the following hold:
 \begin{itemize}

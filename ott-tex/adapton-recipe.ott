@@ -86,19 +86,19 @@ s :: 's_' ::= {{ com Symbols. }}
 
 cell {{ tex c }} :: 'cell_' ::= {{ com Cells. }}
  | NonThunk v :: :: NonThunk {{ com Non-thunk. }} {{ tex [[v]] }}
- | Thunk ( Space , e , StoreValueOption ) :: :: Thunk {{ com Thunk. }} {{ tex \left<[[Space]], [[e]], [[StoreValueOption]]\right> }}
+ | Thunk ( Space , e , StoreValueOption ) :: :: Thunk {{ com Thunk: Space~$[[Space]]$, body~$[[e]]$ and cache state~$[[StoreValueOption]]$. }} {{ tex \left<[[Space]], [[e]], [[StoreValueOption]]\right> }}
 
 Store {{ tex \sigma }} :: 'Store_' ::= {{ com Stores. }}
  | empty :: :: empty {{ com Empty. }} {{ tex \cdot }}
- | pp |-> cell :: :: cell {{ com Cell. }}
- | Store1 , Store2 :: :: union {{ com Disjoint union. }} {{ tex [[Store1]] \cupdot [[Store2]] }}
+ | pp |-> cell :: :: cell {{ com Space-time pointer~$[[pp]]$ stores cell~$[[cell]]$. }}
+ | Store1 , Store2 :: :: union {{ com Disjoint union (distinct pointer sets). }} {{ tex [[Store1]] \cupdot [[Store2]] }}
  | Store { pp |-> cell } :: M :: updateCell {{ com Cell update. }}
  | Store { pp |-> ( Space , v ) } :: M :: updateValue {{ com Defined as two cases, on $[[v]]$. }}
  | Store { pp |/-> } :: M :: removePointer {{ com Remove cell at pointer $[[pp]]$. }}
 
-StoreValueOption {{ tex \tilde{v} }} :: 'StoreValueOption_' ::= {{ com Optional thunk cache (store and value). }}
- | empty :: :: empty {{ tex \bullet }} {{ com None. }}
- | ( Store , v ) :: :: value {{ com Some store~$[[Store]]$ and value~$[[v]]$. }} {{ tex \left<[[Store]], [[v]]\right> }}
+StoreValueOption {{ tex \tilde{v} }} :: 'StoreValueOption_' ::= {{ com Thunk cache state. }}
+ | empty :: :: empty {{ tex \bullet }} {{ com Empty cache. }}
+ | ( Store , v ) :: :: value {{ com Filled cache: Initial store~$[[Store]]$ and final value~$[[v]]$. }} {{ tex \left<[[Store]], [[v]]\right> }}
  | _ :: M :: wildCardPattern
 
 p :: 'p_' ::= {{ com Pointers (spatial component only). }}

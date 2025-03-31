@@ -600,7 +600,7 @@ Graph1(n) = ppp --A--clean--> qq
 DirtyActionPattern ~~ A
 Graph2 = Graph1{ n |-> ppp --A--dirty--> qq }
 Graph2 |- dirty(forces, ppp) !! Graph3
-------------------------------------------------- :: cleanToDirty
+------------------------------------------------- :: cleanIntoDirty
 Graph1 |- dirty(DirtyActionPattern, n) !! Graph3
 
 Graph(n) = ppp --A--clean--> qq

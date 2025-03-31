@@ -34,9 +34,11 @@
 \begin{document}
 
 \author{Matthew A. Hammer}
-\title{The Adapton Recipe
+\title{The Extended Adapton Recipe:
   \\
-  \small The Essence of Demanded Computation Graphs
+  \emph{Demanded Computation Graphs\\
+  within\\
+  Symbolic Space and Time}
 }
 
 \maketitle
@@ -527,18 +529,49 @@ For the latter, the operation returns a pair that includes the space value used 
 
 \section{Graphs}
 
-A graph $[[Graph]]$ consists of named nodes with special payload and edge
-structure.
+A graph $[[Graph]]$ consists of nodes and edges.
+%
+The nodes in the graph correspond to the cells of the store structure in the reference semantics.
+%
+Each node is identified by a full pointer, and a ``meta moment'', which we explain shortly.
+
+The edges of the graph each have a unique identifier (some natural number~$[[n]]$) and each corresponds to a store-based action performed by the program~($\ottkw{put}$, $\ottkw{get}$ or $\ottkw{force}$).
   
 \ottgrammartabular{
   \ottGraph
 }
+
+%\paragraph{Graph node pointers and meta moments.}
 
 \ottgrammartabular{
   \ottppp
 }
 
 \paragraph{Nodes.}
+To distinguish different versions of a node over time,
+the graphical representation introduces another dimension of time called ``meta moments''
+represented by natural numbers and meta variable~$[[m]]$.
+%
+Each node pointer in the graph carries the meta moment for its definition, or re-definition.
+%
+Each time a node is updated, it's updated with an advanced meta moment that distinguishes it from earlier versions.
+
+In a practical system, earlier versions of the same node are
+``shadowed'' by later meta moments, and the shadowed versions can be
+discarded, or saved, depending on other considerations.
+%
+We retain them here as an illustration of one possible ``lossless'' representation for a DCG in a practical system that desires that property.
+
+For each node version, the local trace~$[[t]]$ gives a ordering to the node's immediate outgoing edges.
+%
+Compared to the reference semantics and its store structure, this
+trace~$[[t]]$ is a practical way to fill the role played by taking
+snapshots of the full store~$[[Store]]$ for each thunk's evaluation,
+and caching and comparing that snapshot.
+%
+Instead of doing that, the graphical semantics is more incremental:
+It can partially dirty and clean a thunk's edges, and in so doing, it also avoids any comparison of the entire graph
+when reusing the cached values of thunks in the graph.
 
 \ottgrammartabular{
   \ottnode
@@ -548,9 +581,14 @@ structure.
   \ottt
 }
 
-The local trace~$[[t]]$ of each node gives a local ordering to the edges whose source is that node.
-
 \paragraph{Edges.}
+Each edge~$[[ppp --A--b--> qq]]$ records an action~$[[A]]$, and
+associates with it the source of the action~$[[ppp]]$ (some thunk node
+in the graph) and the target of the action~$[[qq]]$ (some other node
+in the graph).
+%
+The status~$[[b]]$ indicates whether the edge is $[[clean]]$ (aligned
+with current graph) or $[[dirty]]$ (not aligned with current graph).
 
 \ottgrammartabular{
   \ottedge
@@ -589,6 +627,32 @@ that transitively forces it.
 
 \subsection{Dirtying.}
 
+The relations for dirtying use the idea of an ``action pattern'' that
+matches certain actions, and not others:
+
+\ottgrammartabular{
+  \ottDirtyActionPattern
+}
+
+The idea is that when a $\ottkw{put}$ updates a particular pre-existing cell in the graph,
+each existing action that targets that cell is either aligned or misaligned with that update.
+%
+The $[[misaligned(Space,v)]]$ pattern matches any action that is
+misaligned with (i.e., ``inconsistent with'' or ``disequal to'') a
+$\ottkw{put}$ of that space-value~$([[Space]],[[v]])$; it captures this
+initial part of the dirtying traversal.
+
+Then, beyond that first set of affected nodes, each force on any of
+node with a misaligned action/edge, directly or transitively, could be
+affected too.
+%
+The $[[forces]]$ pattern captures this second part of the dirtying
+traversal.
+
+There are six rules for dirtying: One for dirtying ``target nodes,''
+and five for processing their incoming edges (dependent edges),
+transitively.
+
 \[
 \begin{array}{lc}
   {\scalebox{1.5}{
@@ -602,6 +666,10 @@ that transitively forces it.
 \]
 
 \[
+\drule{DirtyXXnode}
+\]
+
+\[
 \begin{array}{lc}
   {\scalebox{1.5}{
   \boxed{[[Graph1 |- dirty ( DirtyActionPattern , t ) !! Graph2]]}}}
@@ -612,6 +680,50 @@ that transitively forces it.
 \end{array}
 \end{array}
 \]
+
+\begin{mathpar}
+  \drule{DirtyXXempty}
+  \drule{DirtyXXbinary}
+  \drule{DirtyXXalreadyDirty}
+  \drule{DirtyXXcleanIntoDirty}
+  \drule{DirtyXXstillClean}
+\end{mathpar}
+
+There are five rules for dirtying a set of relevant edges, expressed as a sequence~$[[t]]$.
+%
+Two cases express the monoidal structure of the
+sequence (\rref{R-CT-empty, R-CT-binary}), and
+three cases express the possible situations for dirtying each edge/action
+(\rref{R-CT-alreadyDirty}, \rref{R-CT-cleanIntoDirty},
+\rref{R-CT-stillClean}).
+
+\Rref{R-CT-alreadyDirty} expresses how the dirtying algorithm ``short
+circuits'' (quits early) when it encounters a dirty edge; it relies on
+the graph's well-formedness to justify this behavior.
+%
+The graph being wellformed guarentees that the edges that the traversal
+would encounter if it were to continue are already marked dirty.
+
+\rref{R-CT-cleanIntoDirty} applies when the action of the edge~$[[A]]$
+matches the pattern of the traversal at this
+point~$[[DirtyActionPattern]]$.
+%
+The rule updates the edge to be~$[[dirty]]$, and it recursively
+dirties any $[[forces]]$ that target the source of the edge, as they
+may be affected too.
+%
+This recursive premise helps enforce that the graph remains
+well-formed with respect to transitive $[[dirty]]$ vs $[[clean]]$ edge statuses.
+
+\rref{R-CT-stillClean} applies for an edge that is clean, and whose
+action~$[[A]]$ does not match the pattern~$[[DirtyActionPattern]]$;
+for instance, it's common for the put edge that targets (and defines)
+a thunk node to remain clean even as that node is affected by actions
+it performs, like accessing cells that change.
+%
+This independence of the $ottkw{put}$ stems from the definition of the
+thunk being distinct from its behavior under any particular store or
+graph.
 
 \subsection{Cleaning.}
 
@@ -736,7 +848,7 @@ immediate action of~$[[pp]]$ with an updated (aligned) action/edge.
 
 (Compared to reference dynamics, only two rules, and second one uses cleaning to always ``redo''.)
 
-\subsection{Cleaning.}
+\subsection{OLD: Cleaning.}
 
 Cleaning begins at a node under demand (via some force), and has the
 potential to include a full traversal of that node's dependencies in
@@ -753,7 +865,7 @@ graph.
 Critically, the order of the cleaning traversal respects the order of
 demand in a from-scratch evaluation.
 
-\paragraph{Cleaning nodes.}
+\paragraph{OLD: Cleaning nodes.}
 When the recipe cleans a node, it does so because that node is under
 demand, either directly (via some force being evaluated by the
 program), or transitively, by some node that is being directly
@@ -825,7 +937,7 @@ Each distinct meta moment in the graph corresponds to the use of this
 rule, the only rule that advances it.
 
 
-\paragraph{Cleaning traces.}
+\paragraph{OLD: Cleaning traces.}
 The judgement~$[[Graph1; Path; Moment; m; Space |- clean(t) !!
     Graph2]]$ defines the cleaning traversal in terms of the original
 order of demand, as witnessed by the local trace~$[[t]]$ of each node
@@ -882,7 +994,7 @@ and reevalutes its source node to replace it.
 See \rref{CN-misaligned}, discussed above.
 
 
-\paragraph{Partial cleaning and misaligned traces.}
+\paragraph{OLD: Partial cleaning and misaligned traces.}
 The judgement~$[[Graph1; Path; Moment; m; Space |- misaligned(t) !!
     Graph2]]$ defines a variation of the cleaning traversal that is
 partial and incomplete.

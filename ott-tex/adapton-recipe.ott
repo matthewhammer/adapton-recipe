@@ -459,18 +459,17 @@ Graph1 ; Path ; Moment ; m ; Space |- clean ( pp ) !! Graph2
 by
 
 Graph1(pp) = Thunk(Space, e0, (t0, v0))
-Graph1 ; Path ; Moment ; m ; Space |- clean ( t0 ) !! Graph2
--------------------------------------------------------------- :: aligned
+Graph1 ; Path ; Moment ; m ; Space |- clean ( t0 ) !! Graph2 ; clean
+----------------------------------------------------------------------- :: aligned
 Graph1 ; Path ; Moment ; m ; Space |- clean ( pp ) !! Graph2
 
 
 Graph1(pp) = Thunk(Space0, e0, (t0, v0))
-Graph1 ; Path ; Moment ; m1 ; Space |- misaligned( t0 ) !! Graph2
+Graph1 ; Path ; Moment ; m1 ; Space |- clean( t0 ) !! Graph2 ; dirty
 nextMetaMoment(Graph2) = m2
-Graph2 ; Path ; Moment ; m2 ; Space0 |- e0 !! Graph3; t3; v3
-Graph3{ (pp, m2) |-> Thunk(Space, e0, (t3, v3)) } = Graph4
-------------------------------------------------------------------- :: misaligned
-Graph1 ; Path ; Moment ; m1 ; Space |- clean ( pp ) !! Graph4
+Graph2{ (pp, m2) |-> Thunk(Space, e0, empty) } ; Path, pp; Moment ; m2 ; Space0 |- e0 !! Graph3; t3; v3
+---------------------------------------------------------------------------------------------------- :: misaligned
+Graph1 ; Path ; Moment ; m1 ; Space |- clean ( pp ) !! Graph3{ (pp, m2) |-> Thunk(Space0, e0, (t3, v3)) }
 
 
 defn

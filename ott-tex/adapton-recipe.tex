@@ -615,6 +615,8 @@ that transitively forces it.
 
 \subsection{Cleaning.}
 
+There are eight rules for cleaning: Two for cleaning nodes, and six for cleaning their traces.
+
 \[
 \begin{array}{lc}
   {\scalebox{1.5}{
@@ -633,12 +635,24 @@ that transitively forces it.
 \end{array}
 \]
 
-There are two cases, for nodes that are aligned (\rref{CN-aligned}) and those that are not (\rref{CN-misaligned}):
+While cleaning nodes, there are two cases: Nodes that are aligned
+(\rref{CN-aligned}) and those that are not (\rref{CN-misaligned}):
 
 \begin{mathpar}
 \drule{CNXXaligned}
 \drule{CNXXmisaligned}
 \end{mathpar}
+
+Algorithmically, the ``alignment'' of the node is a function of its trace, and is indicated by the final status of cleaning that trace under the current graph.
+%
+When $[[clean]]$, we say that the node is still \emph{aligned with the graph}.
+Otherwise, when $[[dirty]]$, we say that the node is \emph{misaligned} with the current graph.
+%
+To remedy the latter situation, the cleaning algorithm replaces misaligned traces with updates ones,
+based on re-evaluating the node under the current graph (see \rref{CN-misaligned}).
+%
+The following relation specifies how to clean a node's trace~$[[t]]$, either fully or partially,
+thereby determining which node cleaning rule applies.
 
 \[
 \begin{array}{lc}
@@ -658,7 +672,34 @@ There are two cases, for nodes that are aligned (\rref{CN-aligned}) and those th
 \end{array}
 \]
 
+\begin{mathpar}
+\drule{RXXCTXXempty}
+\drule{RXXCTXXbinL}
+\drule{RXXCTXXbinR}
+\drule{RXXCTXXalreadyClean}
+\drule{RXXCTXXdirtyIntoClean}
+\drule{RXXCTXXmisaligned}
+\end{mathpar}
 
+There are six rules for cleaning a trace.
+%
+Three cases express the monoidal structure of the
+trace (\rref{R-CT-empty}, \rref{R-CT-binL}, \rref{R-CT-binR}), and
+three cases express the possible situations for each edge/action
+(\rref{R-CT-alreadyClean}, \rref{R-CT-dirtyIntoClean},
+\rref{R-CT-misaligned}).
+
+The three edge rules determine if a node is aligned or misaligned.
+%
+Each aligned edge uses one of the
+two \rref{R-CT-alreadyClean,R-CT-dirtyIntoClean}.
+
+\Rref{R-CT-misaligned} applies for a misaligned edge, where the action
+is no longer aligned with the graph.
+%
+To procede with cleaning the source node~$[[ppp]]$, this misaligned edge~$[[n]]$ must be
+replaced by a use of \rref{CN-misaligned}, which will replace each
+immediate action of~$[[pp]]$ with an updated (aligned) action/edge.
 
 \section{Graph Dynamics}
 

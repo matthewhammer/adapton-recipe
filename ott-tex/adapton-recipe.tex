@@ -295,33 +295,107 @@ The cache of each thunk cell~$[[StoreValueOption]]$ has one of two states:
 Empty cache ($[[empty]]$) or
 filled cache ($[[(Store, v)]]$).
 %
-The filled cache state records an the a store snapshot~$[[Store]]$
-just before that thunk last ran, and the result value~$[[v]]$ of that
-run.
+The filled cache state records a store snapshot~$[[Store]]$
+corresponding to the store \emph{just before} that thunk last ran,
+it records the result value~$[[v]]$ of that last run.
 
-The notion of cache reuse within the reference semantics requires that the current
-store be an ``aligned extension'' of the store snapshot from when the
-thunk last ran.
+\paragraph{Aligned stores.}
+
+The notion of cache reuse within the reference semantics requires that
+the current store~$[[Store2]]$ be an ``aligned extension'' of the store
+snapshot~$[[Store1]]$ from when the thunk last ran.
+
+The relation~$[[Store1 <= Store2]]$ formalizes this relationship as a
+partial order defined inductively over the stores, as follows:
+
+\[
+\begin{array}{ll}\scalebox{1.5}{
+\boxed{
+  [[Store1 <= Store2]]
+}}
+&
+\text{``Store $[[Store2]]$ is an aligned extension of store~$[[Store1]]$''}
+\end{array}
+\]
+
+\begin{mathpar}
+  \drule{AXXempty}
+  \drule{AXXbinary}
+  \drule{AXXcell}
+  \drule{AXXcache}
+\end{mathpar}
+\[
+\drule{AXXequiv}  
+\]
+
+\noindent
+Whenever this relation fails to hold for a pair of stores, it means
+that one or more cells are not part of an aligned extension, and the
+following relation will hold instead:
+
+\[
+\begin{array}{ll}
+  \scalebox{1.5}{
+\boxed{
+  [[Store1 </= Store2]]}
+}
+&
+\text{``Store $[[Store2]]$ is \textbf{not} an aligned extension of store~$[[Store1]]$''}
+\end{array}
+\]
+
+\begin{mathpar}
+  \drule{NAXXfocus}
+  \drule{NAXXchanged}
+  \drule{NAXXforgot}
+\end{mathpar}
+
+\noindent
+(\textbf{Note to draft reader}:
+It remains to prove that these relations are negations of each other,
+and that the alignment relation is a partial order.
+%
+It may also be interesting or useful to state the alignment relation
+independently of the structure of the stores.)
+
+\paragraph{Reference dynamics versus graphical dynamics.}
 %
 This aligned-store extension relationship permits no
 mutable effects other than thunk evaluation, making it considerably
-more limited than the graphical semantics, which uses
-the graphical structure of the DCG to identify fine-grained
-opportunities for reuse, and if necessary, repair.
+more limited than the graphical semantics.
 
-The structure of the graph is motivated by the need to avoid the
-various inpracticalities of the reference semantics, but retain its input-output behavior.
+In contrast to the reference semantics, the graphical structure of the
+DCG can identify fine-grained opportunities for reuse, and if
+necessary, repair them to be aligned with the current program state.
+%
+The cost to create the DCG is a constant factor per store action,
+whereas the reference semantics either foregoes caching, or requires
+creating and comparing snapshots for alignment.
+
+%
+The graphical dynamics is motivated by the need to avoid these various
+impracticalities.
+%
+However, we wish to retain the reference semantics as a reasoning tool,
+as it is comparatively simpler than the graphical semantics,
+and yet enjoys a close formal correspondance with it.
 %
 Indeed, we intend to prove (proof pending) that every derivation in
 the reference semantics has a corresponding derivation in the
-graphical semantics, and vice versa; the difference is that the
-derivations in the graphical semantics will always be similar to or smaller than
-those of the reference semantics in size, and sometimes \emph{much} smaller.
+graphical semantics, and vice versa.
+
+In addition to the impractical nature of store snapshots, the other practical
+difference between these two dynamics is that the \emph{size of the
+derivation} in the graphical dynamics will always be similar to, or
+smaller than, the smallest corresponding one in the reference
+dynamics, and sometimes \emph{much} smaller.
 %
 This compression in derivation size comes from the ability of the
 graph to always facilitate equivalent, or more, patterns of cache reuse.
 
 The next subsections introduce the formal syntax for symbols, spaces, moments (of time) and pointers.
+%
+These concepts, along with program syntax~(Section~\ref{sec:programs}) are common to both dynamics.
 
 \subsection{Symbols}
 \label{sec:symbols}
@@ -583,8 +657,41 @@ It is not defined when no such moment exists.
 There are two cases, depending on whether~$[[cell]]$ is a non-thunk value, or a thunk cell.
 For the latter, the operation returns a pair that includes the space value used by the thunk (note that $[[Space1]]$, $[[Space2]]$ and $[[Space0]]$ can all be distinct).
 
-\subsection{Navigating space-time.}
+
+\subsection{Forcing a thunk pointer}
+
+There are three cases for forcing a stored thunk (pointer).
+%
+Recall that this makes four cases for~$\ottkw{force}$ in total,
+as \rref{E-force} handles the ordinary, non-pointer case.
+
+\begin{mathpar}
+\drule{EXXemptyForce}
+\drule{EXXreuseForce}
+\drule{EXXredoForce}
+\end{mathpar}
+
+When stored, the thunk's cache is either empty (\rref{E-emptyForce}),
+or it has a store-value pair.
+%
+To fill an empty cell, \rref{E-empty} evaluates the thunk body (under
+the original stored space) and caches the result and initial store.
+
+\Rref{E-reuseForce} captures the situation where that cached value was produced
+under a prior store such that the current store is an aligned extension of it.
+%
+\Rref{E-redoForce} captures the opposite case, where the current store is not an aligned extension of the prior store.
+%
+As with \rref{E-emptyForce}, this rule evaluates the thunk body (under
+the original stored space) and caches the result and initial store.
+
+\subsection{Navigating space-time}
 \label{sec:refsem-navigation}
+
+There are a pair of rules for giving access to $\ottkw{here}$ and $\ottkw{now}$
+as first-class space/moment values, respectively,
+and four rules that permit programs to navigate through space and time,
+including the creation of sub-spaces and sub-moments (\rref{E-withinSpace} and \rref{E-withinTime}).
 
 \[
 \begin{array}[t]{p{0.731in}|c|c}
@@ -622,6 +729,12 @@ For the latter, the operation returns a pair that includes the space value used 
 \subsection{Navigating time: Undelay}
 \label{sec:refsem-undelay}
 
+For time navigation (\rref{E-withinTime} and \rref{E-gotoTime}),
+all delayed cells in the target region of time-space are ``undelayed''
+before evaluation continues at that target moment.
+%
+The following relation based on five rules formalizes this idea:
+
 \begin{mathpar}
 \drule{undelayXXempty}
 \drule{undelayXXbinary}
@@ -630,52 +743,6 @@ For the latter, the operation returns a pair that includes the space value used 
 \drule{undelayXXskipSpace}
 \end{mathpar}
 
-\subsection{Forcing a thunk pointer.}
-
- \begin{mathpar}
-\drule{EXXemptyForce}
-\drule{EXXreuseForce}
-\drule{EXXredoForce}
-\end{mathpar}
-
-\subsection{Aligned stores}
-
-\[
-\begin{array}{ll}\scalebox{1.5}{
-\boxed{
-  [[Store1 <= Store2]]
-}}
-&
-\text{``Store $[[Store2]]$ is an aligned extension of store~$[[Store1]]$''}
-\end{array}
-\]
-
-\begin{mathpar}
-  \drule{AXXempty}
-  \drule{AXXbinary}
-  \drule{AXXcell}
-  \drule{AXXcache}
-\end{mathpar}
-\[
-\drule{AXXequiv}  
-\]
-
-\[
-\begin{array}{ll}
-  \scalebox{1.5}{
-\boxed{
-  [[Store1 </= Store2]]}
-}
-&
-\text{``Store $[[Store2]]$ is \textbf{not} an aligned extension of store~$[[Store1]]$''}
-\end{array}
-\]
-
-\begin{mathpar}
-  \drule{NAXXfocus}
-  \drule{NAXXchanged}
-  \drule{NAXXforgot}
-\end{mathpar}
 
 \section{Graphical dynamics}
 \label{sec:graphical-dynamics}

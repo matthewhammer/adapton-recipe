@@ -83,17 +83,25 @@ abstractions.
 \end{itemize}
 
 \noindent
-Adapton's recipe is a PL design and implementation recipe, best
-applied by a team doing both, with full control over both.
+Adapton is a \emph{PL recipe}: a recipe for programming language
+design and implementation.
 %
-It affects the programming model exposed to the programmer, as well as
-the runtime system used by the language's implementation.
+It affects the \emph{programming model} exposed to the
+programmer, as well as the \emph{runtime system} used by the
+language's implementation.
 %
-The recipe maps a purely functional fragment of this team's PL into
+Like any other such recipe, it is intended to be useful for a PL
+research or engineering team interested in adding a certain kind of
+flavor to their language.
+%
+One purpose of this document is to describe this flavor, and the
+recipe behind it, to a broader audience than past publications have
+reached.
+
+This recipe maps a purely functional fragment of this team's PL into
 another PL fragment that is both incremental and stateful, enriching
 the original (subset of the) source PL with read and write operations
-on global state.
-
+on global (and symbolically named) state:
 
 \begin{center}
 \begin{tikzpicture}[node distance=3.5cm, every node/.style={draw, align=center}]
@@ -114,12 +122,13 @@ on global state.
 \end{center}
 
 \noindent
-By employing these special primitives, the program expresses dependencies
-between inputs and outputs (reading the former and writing the later),
-and Adapton hides the complexity of representing and maintaining these
-dynamic dependencies.
+By employing these special primitives, the program or library
+expresses dependencies between inputs and outputs, reading the former
+and writing the later, and Adapton hides the complexity of
+representing and maintaining these various (read, write,
+and~\emph{demand}) dependencies.
 
-Behind the scenes, Adapton's recipe provides the demanded computation graph (DCG),
+Behind the scenes, Adapton's recipe provides the \textbf{demanded computation graph} (DCG),
 including the semantics for the graph components'
 memoization and change propagation\footnote{
 In a sense, Adapton enriches the existing (CBV or CBN)
@@ -145,21 +154,18 @@ that identifies their ``change positions'' symbolically.
 This level of indirection turns out to be critical for efficient
 incremental responses to changes.
 
-Adapton's notion of ``ambient memory'' (and the graphs that implement
-it) permit computations to be \emph{impure} in at least two practical
-ways:
+Unlike prior versions of Adapton (see PLDI 2014 and OOPSLA 2015), this
+\emph{extended} recipe embraces the idea of \emph{naming distinct
+moments of time}, not just space, and permitting multiple versions of
+this named past or future to coexist and reuse each other's redundant
+graphical structures.
+%
+This new recipe subsumes earlier work, and presents the key ideas in a
+single unified documented that is hopefully just as approachable, or
+more approachable, than the original works.
 
-\begin{itemize}
-
-\item \textbf{Reading} from incrementally-changing global state, such as state controlled directly by interactive user input that edits it.
-  
-\item \textbf{Writing} to incrementally-changing global state, including intermediate results and the final output of the computation.
-
-\end{itemize}
-
-Adapton prescribes a general way to augment a functional
-programming language with primitives to handle these read and write effects.
-
+\paragraph{Purpose of this document.}
+%
 The purpose of this document is to communicate the \emph{Extended Adapton Recipe} (EAR) in a way that's useful for\begin{itemize}
 \item[(a)] PL researchers that are curious about DCGs and/or Adapton,
 \item[(b)] language engineers with control over some host PL and an interest in making a subset of that PL into an ``incremental PL'', and
@@ -255,15 +261,6 @@ Informally, these symbols (or ``names'') identify distinct positions
 in space, and distinct steps in time, in a way where ``similar''
 evaluations will use ``similar'' names for ``similar'' purposes.
 %
-Unlike prior versions of Adapton, this recipe embraces the idea of
-naming time, not just space, and permitting multiple versions of the
-past or future to coexist and reuse each other's redundant graphical
-structures.
-%
-As a first step towards presenting these ideas, we initially focus on
-the reference semantics and its symbolic store (ignoring graphs, for
-now).
-
 In the reference semantics, there is no DCG and the symbols help the
 program identify distinct memory cells at distinct moments in time.
 %
@@ -284,12 +281,15 @@ Each thunk cell stores a triple that includes the current space, the thunk body,
 %
 The thunk's space~$[[Space]]$ corresponds to the current
 space when the thunk was defined, but can be changed by the thunk's body during
-evaluation freely if necessary.
+evaluation, if necessary.
+
+In UNIX terms, this initial space is akin to the initial ``working
+directory'' used by a UNIX program when it starts; as with UNIX
+programs, these thunks can create subspaces (akin to UNIX
+subdirectories) and/or may go to other already-existing spaces.
 %
-In UNIX terms, this space is akin to the ``working directory'' to be
-used by the program when it first begins; as with UNIX programs, these
-thunks can create subspaces (``subdirectories'') and/or may go to
-other already-existing spaces as well.
+Section~\ref{sec:refsem-navigation} describes the interaction of
+programs and space-time in the reference dynamics.
 
 The cache of each thunk cell~$[[StoreValueOption]]$ has one of two states:
 Empty cache ($[[empty]]$) or
@@ -431,6 +431,7 @@ names in UNIX, where dashes and dots are common word separators.
 We use the application form to indicate sub-spaces and sub-moments.
 
 \subsection{Symbolic pointers.}
+\label{sec:symbolic-pointers}
 
 Each program or library that uses this recipe
 defines a system of symbolic names for space and time.
@@ -498,7 +499,7 @@ Because they are central to the special new forms, we illustrate their
 \paragraph{Value syntax.}
 The recipe assumes (or adds) an ordinary notion of thunk values.
 %
-To this, it adds symbols, pointers, spaces and moments (See Sections~\ref{sec:symbols} and \ref{sec:symbolic-space-and-time}).
+To this, it adds symbols, pointers, spaces and moments (See Sections~\ref{sec:symbols} and \ref{sec:symbolic-pointers}).
 
 \ottgrammartabular{
   \ottv
@@ -572,9 +573,11 @@ as the thunk-naming symbol to name this subspace:
 \begin{array}{lcl}
   [[do @within e1 ({( e2 )})]]
   &\equiv&
-  [[let x = put((e1, thunk((do within space ((e1))({(e2)}))))) in]]
+  [[let x = e1 in]]
   \\
-  &&[[force((x))]]
+  &&[[let y = put((x, thunk((do within space ((x))({(e2)}))))) in]]
+  \\
+  &&[[force((y))]]
 \end{array}
 \]
 
@@ -627,23 +630,22 @@ Some expressions produce symbol trees:
 \drule{EXXsymApp}
 \]
 
-\subsection{Put and get.}
+\subsection{Putting a value into the store.}
+\label{sec:refsem-get}
 
-Put and get operations give write and read access to the global store.
+Put operations write to the global store.
+%
+There are two temporal cases: immediate in space-time, or delayed in time-space:
 
 \[
 \begin{array}{cc}
-  \drule{EXXputImmediate}
-  &
-  \drule{EXXgetNonThunk}
-  \\[2mm]
-  \drule{EXXputDelay}
-  &
-  \drule{EXXgetThunk}
+\drule{EXXputImmediate}
+&
+\drule{EXXputDelay}
 \end{array}
 \]
 
-There are two temporal cases for putting a value into the store (immediate in space-time, or delayed in time-space).
+\noindent
 %
 Each value put into the store can either be a thunk or a non-thunk value.
 For a thunk, the store update syntax $[[Store{pp |-> (Space, v)}]]$
@@ -652,11 +654,24 @@ and this update is defined as $[[Store{pp |-> Thunk(Space, e, empty)}]]$.
 Alternatively, when $[[v /= thunk((e))]]$, 
 the update ignores the space~$[[Space]]$ and is defined instead as $[[Store{pp |-> NonThunk v}]]$.
 
-For the two \texttt{get} rules, the store access $[[Store((Space2, Moment) ^ st) = cell]]$ compares the current moment~$[[Moment]]$ to those written at the given space~$[[Space2]]$, choosing the ``latest'' cell whose moment is equal to or earlier than~$[[Moment]]$, if it exists.
-It is not defined when no such moment exists.
-There are two cases, depending on whether~$[[cell]]$ is a non-thunk value, or a thunk cell.
+
+\subsection{Getting a value from the store.}
+\label{sec:refsem-get}
+
+There are two cases for $\ottkw{get}$, depending on whether~$[[cell]]$ is a non-thunk value, or a thunk cell.
 For the latter, the operation returns a pair that includes the space value used by the thunk (note that $[[Space1]]$, $[[Space2]]$ and $[[Space0]]$ can all be distinct).
 
+\[
+\begin{array}{cc}
+\drule{EXXgetNonThunk}
+&
+\drule{EXXgetThunk}
+\end{array}
+\]
+
+\noindent
+In each \texttt{get} rule, the store access $[[Store((Space2, Moment) ^ st) = cell]]$ compares the current moment~$[[Moment]]$ to those written at the given space~$[[Space2]]$, choosing the ``latest'' cell whose moment is equal to or earlier than~$[[Moment]]$, if it exists.
+It is not defined when no such moment exists.
 
 \subsection{Forcing a thunk pointer}
 
@@ -887,8 +902,20 @@ transitively.
 \]
 
 \[
-\drule{DirtyXXnode}
+\drule{dirtyNode}
 \]
+
+\noindent
+\Rref{dirtyNode} uses another dirtying relation (given just below) to
+process each edge in the set of edges that target the node~$[[ppp]]$.
+%
+The same action pattern is compared against the action on each edge.
+%
+In contrast to cleaning, the ordering of dirtying these edges is
+inconsequential to the final output of the dirtying traversal.
+%
+To make the rules determinisitic, we can sort the edge identifiers by
+their happenstance natural numbers.
 
 \[
 \begin{array}{lc}
@@ -903,29 +930,29 @@ transitively.
 \]
 
 \begin{mathpar}
-  \drule{DirtyXXempty}
-  \drule{DirtyXXbinary}
-  \drule{DirtyXXalreadyDirty}
-  \drule{DirtyXXcleanIntoDirty}
-  \drule{DirtyXXstillClean}
+  \drule{DTXXempty}
+  \drule{DTXXbinary}
+  \drule{DTXXalreadyDirty}
+  \drule{DTXXcleanIntoDirty}
+  \drule{DTXXstillClean}
 \end{mathpar}
 
 There are five rules for dirtying a set of relevant edges, expressed as a sequence~$[[t]]$.
 %
 Two cases express the monoidal structure of the
-sequence (\rref{R-CT-empty, R-CT-binary}), and
+sequence (\rref{DT-empty, DT-binary}), and
 three cases express the possible situations for dirtying each edge/action
-(\rref{R-CT-alreadyDirty}, \rref{R-CT-cleanIntoDirty},
-\rref{R-CT-stillClean}).
+(\rref{DT-alreadyDirty}, \rref{DT-cleanIntoDirty},
+\rref{DT-stillClean}).
 
-\Rref{R-CT-alreadyDirty} expresses how the dirtying algorithm ``short
+\Rref{DT-alreadyDirty} expresses how the dirtying algorithm ``short
 circuits'' (quits early) when it encounters a dirty edge; it relies on
 the graph's well-formedness to justify this behavior.
 %
 The graph being wellformed guarentees that the edges that the traversal
 would encounter if it were to continue are already marked dirty.
 
-\rref{R-CT-cleanIntoDirty} applies when the action of the edge~$[[A]]$
+\rref{DT-cleanIntoDirty} applies when the action of the edge~$[[A]]$
 matches the pattern of the traversal at this
 point~$[[DirtyActionPattern]]$.
 %
@@ -936,13 +963,13 @@ may be affected too.
 This recursive premise helps enforce that the graph remains
 well-formed with respect to transitive $[[dirty]]$ vs $[[clean]]$ edge statuses.
 
-\rref{R-CT-stillClean} applies for an edge that is clean, and whose
+\rref{DT-stillClean} applies for an edge that is clean, and whose
 action~$[[A]]$ does not match the pattern~$[[DirtyActionPattern]]$;
 for instance, it's common for the put edge that targets (and defines)
 a thunk node to remain clean even as that node is affected by actions
 it performs, like accessing cells that change.
 %
-This independence of the $ottkw{put}$ stems from the definition of the
+This independence of the $\ottkw{put}$ stems from the definition of the
 thunk being distinct from its behavior under any particular store or
 graph.
 
@@ -1032,28 +1059,28 @@ thereby determining which node cleaning rule applies.
 \]
 
 \begin{mathpar}
-\drule{RXXCTXXempty}
-\drule{RXXCTXXbinL}
-\drule{RXXCTXXbinR}
-\drule{RXXCTXXalreadyClean}
-\drule{RXXCTXXdirtyIntoClean}
-\drule{RXXCTXXmisaligned}
+\drule{CTXXempty}
+\drule{CTXXbinL}
+\drule{CTXXbinR}
+\drule{CTXXalreadyClean}
+\drule{CTXXdirtyIntoClean}
+\drule{CTXXmisaligned}
 \end{mathpar}
 
 There are six rules for cleaning a trace.
 %
 Three cases express the monoidal structure of the
-trace (\rref{R-CT-empty}, \rref{R-CT-binL}, \rref{R-CT-binR}), and
+trace (\rref{CT-empty}, \rref{CT-binL}, \rref{CT-binR}), and
 three cases express the possible situations for each edge/action
-(\rref{R-CT-alreadyClean}, \rref{R-CT-dirtyIntoClean},
-\rref{R-CT-misaligned}).
+(\rref{CT-alreadyClean}, \rref{CT-dirtyIntoClean},
+\rref{CT-misaligned}).
 
 The three edge rules determine if a node is aligned or misaligned.
 %
 Each aligned edge uses one of the
-two \rref{R-CT-alreadyClean,R-CT-dirtyIntoClean}.
+two \rref{CT-alreadyClean,CT-dirtyIntoClean}.
 
-\Rref{R-CT-misaligned} applies for a misaligned edge, where the action
+\Rref{CT-misaligned} applies for a misaligned edge, where the action
 is no longer aligned with the graph.
 %
 To procede with cleaning the source node~$[[ppp]]$, this misaligned edge~$[[n]]$ must be
@@ -1080,11 +1107,37 @@ immediate action of~$[[pp]]$ with an updated (aligned) action/edge.
 \end{array}
 \]
 
-\subsection{Put and get.}
+\subsection{Putting values into the store.}
 
-(Compared to reference dynamics, very similar, but uses dirtying for put.)
+(Compared to reference dynamics, very similar, but uses dirtying for put and stores edges.)
+
+\subsection{Getting values from the store.}
+
+(Compared to reference dynamics, very similar, but stores edges.)
 
 \subsection{Forcing a thunk pointer.}
+
+There are two rules for forcing a thunk pointer in the graphical semantics.
+%
+Both are similar to their reference semantics counterparts; we focus on the differences.
+
+\Rref{IE-emptyForce} handles the case where the thunk cache is empty
+by evaluating the thunk (under the appropriate path and space) and
+storing the resulting trace and value in the cache.
+
+\Rref{IE-cleanForce} handles the case where the thunk cache is filled
+by first cleaning the thunk node, and then accessing the aligned (up
+to date) resul value from the cache.
+
+Compared to the reference semantics, the is only one rule for a filled
+cache, and this rule always applies, and cleaning always succeeds
+(somehow) in updating the cache to be aligned with the current graph.
+%
+Sometimes, cleaning will effectively ``redo'' the thunk if needed, but
+not in every case where the reference semantics falls back to a
+``redo''.
+
+\textbf{Note to draft reader}: We need an example here to help illustrate the point. Pending.
 
 \begin{mathpar}
 \drule{IEXXemptyForce}

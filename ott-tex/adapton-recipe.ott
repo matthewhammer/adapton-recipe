@@ -59,6 +59,7 @@ formula :: 'formula_' ::=
  | Graph ( ppp ) =  node :: :: graphGetNodePrecisely
  | Graph ( n ) = edge :: :: graphGetEdge
  | Graph1 = Graph2 :: :: graphEqual
+ | Store1 = Store2 :: :: storeEqual
  | Store1 == Store2 :: :: storeEquiv {{ tex [[Store1]] \equiv [[Store2]] }}
  | v1 = v2 :: :: equal
  | v1 /= v2 :: :: notEqualValue
@@ -107,7 +108,7 @@ p :: 'p_' ::= {{ com Pointers (spatial component only). }}
 pp {{ tex \tilde{p} }}, qq {{ tex \tilde{q} }} :: 'pp_' ::= {{ com Full pointers. }}
  | ( Space , Moment ) ^ d :: :: pointer {{ tex \left<[[Space]],[[Moment]]\right>^{[[d]]} }} {{ com Space $[[Space]]$ and moment $[[Moment]]$, dimension order~$[[d]]$. }}
 
-d :: 'd_' ::= {{ com Dimension order (store region). }}
+d :: 'd_' ::= {{ com Dimension order (one of two store regions). }}
  | st :: :: st {{ com $\left<\text{Space}, \text{Time}\right>$ region. }}
  | ts :: :: ts {{ com $\left<\text{Time}, \text{Space}\right>$ region. }}
 
@@ -137,13 +138,13 @@ vv {{ tex \cdots }} :: 'v_' ::= {{ com Values (continued). }}
  | value ( A ) :: M :: valueOfEdgeAction {{ com Value of edge action $[[A]]$. }}
 
 e :: 'e_' ::= {{ com Expressions. }}
- | thunk (( e )) :: :: thunk {{ com Thunk. }}
- | force (( e )) :: :: force {{ com Force. }}
- | put (( e1 , e2 , e3 )) :: :: putThree {{ com Put (fully-qualified). }}
- | put (( e1 , e2 )) :: :: putTwo {{ com Put (into current moment). }}
- | get (( e )) :: :: get {{ com Get. }}
- | here (( )) :: :: here {{ com Here. }}
- | now (( )) :: :: now {{ com Now. }}
+ | thunk (( e )) :: :: thunk {{ com Thunk (a value). }}
+ | force (( e )) :: :: force {{ com Force thunk or thunk pointer. }}
+ | put (( e1 , e2 , e3 )) :: :: putThree {{ com Put cell into \emph{delayed} moment. }}
+ | put (( e1 , e2 )) :: :: putTwo {{ com Put cell into \emph{current} moment. }}
+ | get (( e )) :: :: get {{ com Get cell. }}
+ | here (( )) :: :: here {{ com Here (current ambient space). }}
+ | now (( )) :: :: now {{ com Now (current ambient time). }}
  | do C (( e1 )) ({( e2 )}) :: :: do {{ com Do. }}
  | do @ e1 ({( e2 )}) :: M :: doAt {{ com Do-at. Shorthand syntax. }}
  | do @ e1 within e2 ({( e3 )}) :: M :: doAtWithin {{ com Do-at-with. Shorthand syntax. }}
@@ -306,15 +307,17 @@ Store1 ; Path ; Moment ; Space |- do goto moment((e1))({(e2)}) !! Store4 ; v
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
 (subSpace(Space, s), Moment)^st \notin Path
+Store3{ (subSpace(Space, s), Moment)^st |->(Space, v) } = Store4
 ---------------------------------------------------------------------------------------------------------------- :: putImmediate
-Store1 ; Path ; Moment ; Space |- put ((e1, e2)) !! Store3{ (subSpace(Space, s), Moment)^st |->(Space, v) } ; ptr subSpace(Space,s)
+Store1 ; Path ; Moment ; Space |- put ((e1, e2)) !! Store4 ; ptr subSpace(Space,s)
 
 
 Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment1 ; Space |- e2 !! Store3 ; v
 Store3 ; Path ; Moment1 ; Space |- e3 !! Store4 ; mt Moment2
+Store4{ (subSpace(Space, s), Moment2)^ts |->(Space, v) } = Store5
 --------------------------------------------------------------------------------------------------------------- :: putDelay
-Store ; Path ; Moment1 ; Space |- put ((e1, e2, e3)) !! Store4{ (subSpace(Space, s), Moment2)^ts |->(Space, v) } ; ptr subSpace(Space,s)
+Store ; Path ; Moment1 ; Space |- put ((e1, e2, e3)) !! Store5 ; ptr subSpace(Space,s)
 
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space2
@@ -471,59 +474,9 @@ Graph2{ (pp, m2) |-> Thunk(Space, e0, empty) } ; Path, pp; Moment ; m2 ; Space0 
 ---------------------------------------------------------------------------------------------------- :: misaligned
 Graph1 ; Path ; Moment ; m1 ; Space |- clean ( pp ) !! Graph3{ (pp, m2) |-> Thunk(Space0, e0, (t3, v3)) }
 
-
-defn
-Graph1 ; Path ; Moment ; m ; Space |- clean ( t ) !! Graph2
-:: :: cleanTrace :: 'CT_'
-{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[t]]) \Downarrow [[Graph2]] }}
-by
-
-------------------------------------------------------------- :: empty
-Graph ; Path ; Moment ; m ; Space |- clean ( empty ) !! Graph
-
-Graph1 ; Path ; Moment ; m ; Space |- clean ( t1 ) !! Graph2
-Graph2 ; Path ; Moment ; m ; Space |- clean ( t2 ) !! Graph3
------------------------------------------------------------------ :: binary
-Graph1 ; Path ; Moment ; m ; Space |- clean ( t1, t2 ) !! Graph3
-
-
-Graph(n) = ppp -- A -- clean --> qq
-------------------------------------------------------- :: alreadyClean
-Graph ; Path ; Moment ; m ; Space |- clean(n) !! Graph
-
-Graph1(n) = ppp -- A -- dirty --> qq
-Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2
-value(A) = value(Graph2, qq)
-Graph3 = Graph2{ n |-> ppp --A--clean--> qq }
------------------------------------------------------------ :: dirtyIntoClean
-Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph3
-
-
-defn
-Graph1 ; Path ; Moment ; m ; Space |- misaligned ( t ) !! Graph2
-:: :: misaligned :: 'MA_'
-{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{misaligned}([[t]]) \Downarrow [[Graph2]] }}
-by
-
-Graph2 ; Path ; Moment ; m ; Space |- misaligned ( t1 ) !! Graph2
----------------------------------------------------------------------- :: binL
-Graph1 ; Path ; Moment ; m ; Space |- misaligned ( t1, t2 ) !! Graph2
-
-Graph1 ; Path ; Moment ; m ; Space |- clean ( t1 ) !! Graph2
-Graph2 ; Path ; Moment ; m ; Space |- misaligned ( t2 ) !! Graph3
---------------------------------------------------------------------- :: binR
-Graph1 ; Path ; Moment ; m ; Space |- misaligned ( t1, t2 ) !! Graph3
-
-Graph1(n) = ppp -- A -- dirty --> qq
-Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2
-value(A) /= value(Graph2, qq)
---------------------------------------------------------------- :: edge
-Graph1 ; Path ; Moment ; m ; Space |- misaligned(n) !! Graph2
-
-
 defn
 Graph1 ; Path ; Moment ; m ; Space |- clean ( t ) !! Graph2 ; b
-:: :: revisedCleanTrace :: 'R_CT_'
+:: :: revisedCleanTrace :: 'CT_'
 {{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[t]]) \Downarrow [[Graph2]] ; [[b]] }}
 by
 
@@ -570,16 +523,16 @@ by
 
 defn
 Graph1 |- dirty ( DirtyActionPattern , ppp ) !! Graph2
-:: :: dirtyNode :: 'Dirty_'
+:: :: dirtyNode :: ''
 by
 
 Graph1 |- dirty ( DirtyActionPattern , incomingEdges(Graph1, ppp) ) !! Graph2
------------------------------------------------------------------------------- :: node
+------------------------------------------------------------------------------ :: dirtyNode
 Graph1 |- dirty ( DirtyActionPattern , ppp ) !! Graph2
 
 defn
 Graph1 |- dirty ( DirtyActionPattern , t ) !! Graph2
-:: :: dirtyTrace :: 'Dirty_'
+:: :: dirtyTrace :: 'DT_'
 by
 
 -------------------------------------------------- :: empty

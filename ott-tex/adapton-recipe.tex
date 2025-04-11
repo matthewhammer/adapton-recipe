@@ -214,6 +214,8 @@ This document is organized as follows:
 
 \begin{itemize}
 
+\item Section \ref{sec:collections} introduces the recipe's approach to programming with collection-based data structures like sequences, sets and finite maps.  The concepts introduced here are used in subsequent section's program examples.
+  
 \item Section \ref{sec:symbolic-space-and-time} introduces the idea of symbols and their possible program syntax.  We introduce the idea of the ``symbolic store'' used by the reference semantics.  The graphical semantics builds on these ideas and adds the concept of recording evaluation traces for these store effects.
   
 \item Section \ref{sec:programs} gives some prototypical syntax
@@ -248,8 +250,90 @@ This document is organized as follows:
   
 \end{itemize}
 
-\section{Motivating Example Program}
+\newpage
 
+\section{Incremental Collections}
+\label{sec:collections}
+
+We introduce the recipe's approach to collections like sequences,
+sets, and finite maps.
+%
+The recipe uses \textbf{binary trees} of a certain flavor to represent
+each of these collection types.
+
+Each such binary tree requires two properties, which the recipe satisfies:
+
+\begin{itemize}  
+\item \textbf{change stable}: similar mathematical structures
+  correspond to similar binary trees, with many identical subtree
+  structures.
+
+\item \textbf{balanced}: the size of the left and right subtrees of
+  every tree are \emph{asymptotically equal}.  For instance, for every
+  binary tree, the left and right subtree sizes are within a factor of
+  $[1/b, b]$ of each other, for some constant $b$ (e.g., consider $b$
+  as $2$, or possibly even larger values).
+\end{itemize}
+
+The rest of the recipe's approach to collection-based algorithms
+relies on these two properties for each binary tree, regardless of
+whether it's representing a sequence, a set or a finite map.
+%
+In the remainder of this section, we focus on sequences and their
+representations as binary trees.
+
+\subsection{Incremental sequences}
+
+Mathematically, a sequence is a monoid.  As commonly found in
+functional programming, we use this relationship as an approach to
+representing sequences.
+%
+These consist of immutable sequences, like in functional programming,
+but also sequences that can change from moment to moment.
+
+In data structure terms, a \emph{monoid} is an inductive (tree-shaped)
+structure that represents a sequence of data elements with an associative ``append'' operation.
+%
+It has three forms:
+
+\begin{itemize}
+\item The \textbf{singleton data} form carries a value of some data type that is common to the entire monoid (e.g., ``integer'', ``database record'', etc.); these elements carry the relevant ``data'' of the monoid structure.
+\item The \textbf{binary node} form of two monoid structures (e.g., $L + R$), which sends this pair into a third monoid representing their being appended; this form reflects the choices of how to combine/divide within the monoid sequence structure.
+\item A special \textbf{empty element}, (e.g., $0$) which ``cancels'' the binary operation by ``serving as its identity element'' (meaning that $0 + R = R$ and $L + 0 = L$ holds for all $L$ and $R$).
+\end{itemize}
+
+These forms permit a program to ``generate'' the monoid structure for
+some relevant sequence of elements, in preparation for doing something
+else with that sequence that involves each element, such as
+determining the max element, the min element, the median element, or
+even sorting it upon demand into a new, output sequence.
+%
+In the remainder of this section, we work towards that final example
+(demand-driven sorted output sequence), building the needed components
+in stages.
+
+\subsection{Monoid generation}
+
+Given a sequence of elements, there are many possible ways to generate a monoid.
+%
+For instance, a linked list is a kind of monoid structure, but it
+doesn't meet either condition that we require for binary trees, as its
+only a pathological kind of binary tree (totally imbalanced, and thus
+not change stable either).
+
+There are many algorithms that could generally produce acceptable
+binary trees, but the recipe embraces one that uses psuedo-random
+decisions based on the relative position of each element in the input
+sequence.  As we show through experimentation (and argue by reference
+to earlier work that established a similar approach), the recipe's
+\texttt{Seq} trees provide both balance and change stability, as
+required.
+
+XXX
+
+to do
+
+\subsection{Monoid reduction}
 
 \begin{tikzpicture}[scale=2.0, every node/.style={draw, scale=0.6},
   root/.style={xshift=2cm},

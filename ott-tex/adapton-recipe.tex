@@ -251,12 +251,22 @@ This document is organized as follows:
 \section{Motivating Example Program}
 
 
-\begin{tikzpicture}[scale=2.0, every node/.style={draw, scale=0.5},
-  layerA/.style={yslant=-0.5, xslant=0.5, xshift=-2cm},
+\begin{tikzpicture}[scale=2.0, every node/.style={draw, scale=0.6},
+  root/.style={xshift=2cm},
+  layerA/.style={yslant=-0.5, xslant=0.5, xshift=-1cm},
   layerB/.style={yslant=-0.5, xslant=0.5, yshift=-1cm},
-  connection/.style={->, thick, color=blue!50!black, opacity=0.7}
+  pointer/.style={->, thick, >=Stealth, dotted},
+  connection/.style={->, thick, color=blue!50!black, opacity=0.7},
+  thunk/.style={circle, draw, fill=white!80!gray},
+  edge/.style={->, thick, >=Stealth, blue!50!black},
+  edgeNum/.style={near start, above, draw=none},
+  fieldLabel/.style={near start, above, draw=none, fill=white},
 ]
 
+  \begin{scope}[root]
+    \node[scale=2.0, cloud] (here-now) at (0,0) {\texttt{here/now}};
+  \end{scope}
+  
 % Layer A: Tree A
   \begin{scope}[layerA]
   \node (A1) at (0,0) {A1};
@@ -267,38 +277,45 @@ This document is organized as follows:
   \node (A6) at (0.5,-3) {A6};
   \node (A7) at (1.5,-3) {A7};
 
-  \draw (A1) -- (A2) -- (A4);
-  \draw (A2) -- (A5);
-  \draw (A1) -- (A3) -- (A6);
-  \draw (A3) -- (A7);
+  \draw[pointer] (A1) -- (A2) node[fieldLabel]{left};
+  \draw[pointer] (A2) -- (A4) node[fieldLabel]{left};
+  \draw[pointer] (A2) -- (A5) node[fieldLabel]{right};
+  \draw[pointer] (A1) -- (A3) node[fieldLabel]{right} -- (A6) node[fieldLabel]{left};
+  \draw[pointer] (A3) -- (A7) node[fieldLabel]{right};
 \end{scope}
 
 % Layer B: Tree B
-  \begin{scope}[layerB, every node/.style={circle, draw, fill=white!80!gray}]
-  \node (B1) at (0,0) {B1};
-  \node (B2) at (-1,-1.5) {B2};
-  \node (B3) at (1,-1.5) {B3};
-  \node (B4) at (-1.5,-3) {B4};
-  \node (B5) at (-0.5,-3) {B5};
-  \node (B6) at (0.5,-3) {B6};
-  \node (B7) at (1.5,-3) {B7};
+  \begin{scope}[layerB]
+  \node[thunk] (B1) at (0,0) {B1};
+  \node[thunk] (B2) at (-1,-1.5) {B2};
+  \node[thunk] (B3) at (1,-1.5) {B3};
+  \node[thunk] (B4) at (-1.5,-3) {B4};
+  \node[thunk] (B5) at (-0.5,-3) {B5};
+  \node[thunk] (B6) at (0.5,-3) {B6};
+  \node[thunk] (B7) at (1.5,-3) {B7};
 
-  \draw (B1) -- (B2) -- (B4);
-  \draw (B2) -- (B5);
-  \draw (B1) -- (B3) -- (B6);
-  \draw (B3) -- (B7);
+  \draw[edge] (B1) -- (B2) node[edgeNum] {2};
+  \draw[edge] (B2) -- (B4) node[edgeNum] {2};
+  \draw[edge] (B2) -- (B5) node[edgeNum,right] {3};
+  \draw[edge] (B1) -- (B3) node[edgeNum,right] {3};
+  \draw[edge] (B3) -- (B6) node[edgeNum] {2};
+  \draw[edge] (B3) -- (B7) node[edgeNum,right] {3};
 \end{scope}
 
 % Connections between layers
-\draw[connection] (B1) .. controls +(up:1cm) and +(down:1cm) .. (A1);
-\draw[connection] (B2) .. controls +(up:1cm) and +(down:1cm) .. (A2);
-\draw[connection] (B3) .. controls +(up:1cm) and +(down:1cm) .. (A3);
+\draw[connection] (B1) .. controls +(up:0.5cm) and +(right:0.5cm) .. (A1) node[edgeNum,right] {1};
+\draw[connection] (B2) .. controls +(up:0.5cm) and +(right:0.5cm) .. (A2) node[edgeNum,right] {1};
+\draw[connection] (B3) -- (A3) node[edgeNum,left] {1};
 
-\draw[connection] (B4) .. controls +(up:1cm) and +(down:1cm) .. (A4);
-\draw[connection] (B5) .. controls +(up:1cm) and +(down:1cm) .. (A5);
-\draw[connection] (B6) .. controls +(up:1cm) and +(down:1cm) .. (A6);
-\draw[connection] (B7) .. controls +(up:1cm) and +(down:1cm) .. (A7);
+\draw[connection] (B4) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A4) node[edgeNum] {1};
+\draw[connection] (B5) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A5) node[edgeNum] {1};
+\draw[connection] (B6) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A6) node[edgeNum] {1};
+\draw[connection] (B7) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A7) node[edgeNum] {1};
 
+
+% edges
+\draw[edge] (here-now) .. controls +(left:1cm) and +(up:1cm) .. (A1) node[edgeNum] {1};
+\draw[edge] (here-now) -- (B1) node[edgeNum] {2};
 \end{tikzpicture}
 
 

@@ -14,6 +14,8 @@
 \usepackage{amsmath}
 \usepackage{geometry}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,3d,backgrounds}
 
 % \usepackage{bm} % bold tt font in math mode
 
@@ -245,6 +247,59 @@ This document is organized as follows:
   measurements.
   
 \end{itemize}
+
+\section{Motivating Example Program}
+
+
+\begin{tikzpicture}[scale=2.0, every node/.style={draw, scale=0.5},
+  layerA/.style={yslant=-0.5, xslant=0.5, xshift=-2cm},
+  layerB/.style={yslant=-0.5, xslant=0.5, yshift=-1cm},
+  connection/.style={->, thick, color=blue!50!black, opacity=0.7}
+]
+
+% Layer A: Tree A
+  \begin{scope}[layerA]
+  \node (A1) at (0,0) {A1};
+  \node (A2) at (-1,-1.5) {A2};
+  \node (A3) at (1,-1.5) {A3};
+  \node (A4) at (-1.5,-3) {A4};
+  \node (A5) at (-0.5,-3) {A5};
+  \node (A6) at (0.5,-3) {A6};
+  \node (A7) at (1.5,-3) {A7};
+
+  \draw (A1) -- (A2) -- (A4);
+  \draw (A2) -- (A5);
+  \draw (A1) -- (A3) -- (A6);
+  \draw (A3) -- (A7);
+\end{scope}
+
+% Layer B: Tree B
+  \begin{scope}[layerB, every node/.style={circle, draw, fill=white!80!gray}]
+  \node (B1) at (0,0) {B1};
+  \node (B2) at (-1,-1.5) {B2};
+  \node (B3) at (1,-1.5) {B3};
+  \node (B4) at (-1.5,-3) {B4};
+  \node (B5) at (-0.5,-3) {B5};
+  \node (B6) at (0.5,-3) {B6};
+  \node (B7) at (1.5,-3) {B7};
+
+  \draw (B1) -- (B2) -- (B4);
+  \draw (B2) -- (B5);
+  \draw (B1) -- (B3) -- (B6);
+  \draw (B3) -- (B7);
+\end{scope}
+
+% Connections between layers
+\draw[connection] (B1) .. controls +(up:1cm) and +(down:1cm) .. (A1);
+\draw[connection] (B2) .. controls +(up:1cm) and +(down:1cm) .. (A2);
+\draw[connection] (B3) .. controls +(up:1cm) and +(down:1cm) .. (A3);
+
+\draw[connection] (B4) .. controls +(up:1cm) and +(down:1cm) .. (A4);
+\draw[connection] (B5) .. controls +(up:1cm) and +(down:1cm) .. (A5);
+\draw[connection] (B6) .. controls +(up:1cm) and +(down:1cm) .. (A6);
+\draw[connection] (B7) .. controls +(up:1cm) and +(down:1cm) .. (A7);
+
+\end{tikzpicture}
 
 
 \section{Symbolic Space and Time}

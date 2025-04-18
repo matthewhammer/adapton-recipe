@@ -11,7 +11,7 @@
 \usepackage{inconsolata}
 \usepackage{xcolor}
 \usepackage[alternateNonterms]{ottalt}
-\usepackage{amsmath}
+\usepackage{amsmath,amsthm}
 \usepackage{geometry}
 \usepackage{graphicx}
 \usepackage{tikz}
@@ -24,6 +24,8 @@
 \inputott{formalism-commands}
 
 \renewcommand{\ottkw}[1]{\textbf{\texttt{#1}}}
+
+\newtheorem{definition}{Definition}
 
 %\renewcommand{\ottcom}[1]{\textit{#1}}
 
@@ -256,27 +258,44 @@ This document is organized as follows:
 \label{sec:collections}
 
 We introduce the recipe's approach to collections like sequences,
-sets, and finite maps.
-%
+sets, and finite maps based on the concept of \emph{harmonious trees},
+a term of art that we introduce for the first time here, based on
+intuitions and related definitions developed in prior work.
+
+\subsection{Harmonious binary trees}
+
 The recipe uses \textbf{binary trees} of a certain flavor to represent
-each of these collection types.
+each each collection type (set, partial map, or sequence).
+%
+Other tree arities are possible too, using more general definitions
+and algorithms, but in this recipe, we focus on binary trees for
+simplicity.
 
-Each such binary tree requires two properties, which the recipe satisfies:
-
+\begin{definition}[Harmious tree representation]
+  Given a set of mathematical structures~$\mathcal{S}$ (like
+  sequences, sets or finite maps of some certain element types) we say
+  that binary tree representation~$\ottkw{tree}$ is \emph{harmonious}
+  if it enjoys two properties:
 \begin{itemize}  
-\item \textbf{change stable}: similar mathematical structures
-  correspond to similar binary trees, with many identical subtree
-  structures.
 
-\item \textbf{balanced}: the size of the left and right subtrees of
-  every tree are \emph{asymptotically equal}.  For instance, for every
-  binary tree, the left and right subtree sizes are within a factor of
-  $[1/b, b]$ of each other, for some constant $b$ (e.g., consider $b$
-  as $2$, or possibly even larger values).
+\item \textbf{balance}: For each structure $S \in \mathcal{S}$, the
+  corresponding tree $T = \ottkw{tree}(S)$ consists of \emph{balanced
+  binary nodes}: each binary node has left and right subtrees are
+  within some constant factor of each other, specific to the function~\ottkw{tree}.
+
+\item \textbf{change stable}: similar mathematical structures $S_1,
+  S_2 \in \mathcal{S}$ correspond to similar binary trees $T_1 =
+  \ottkw{tree}(S_1)$ and $T_2 = \ottkw{tree}(S_2)$, with many
+  identical subtree structures.  That is, if $S_1$ and $S_2$ are
+  related by small change, then $T_1$ and $T_2$ should also be
+  relatable with a small change.
+
 \end{itemize}
 
+\end{definition}
+
 The rest of the recipe's approach to collection-based algorithms
-relies on these two properties for each binary tree, regardless of
+relies on this property for each binary tree, regardless of
 whether it's representing a sequence, a set or a finite map.
 %
 In the remainder of this section, we focus on sequences and their

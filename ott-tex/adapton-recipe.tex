@@ -74,13 +74,13 @@ abstractions.
   with \emph{general recursion, over general-purpose data structures}
   with or without mutation and cycles (as opposed to a more restricted
   domain-specific language), and
-  
+
 \item ``\textbf{incremental}'' here means two complementary things at once:
   \begin {itemize}
 
   \item that the \textbf{program's input mutates incrementally} by the
-    ambient editor program or user, in arbitrary change batches (more than one, generally), and 
-    
+    ambient editor program or user, in arbitrary change batches (more than one, generally), and
+
   \item that the \textbf{program's output is demanded incrementally}
     by that ambient editor.
   \end{itemize}
@@ -112,7 +112,7 @@ on global (and symbolically named) state:
 
   % Left outer blob
   \node (outerblob) [circle, minimum size=4cm] {};
-  
+
   % Left inner blob
   \node (innerblob) [circle, minimum size=2.5cm, dotted] at (outerblob.center) {\it purely-functional\\\it fragment of\\ PL};
 
@@ -186,7 +186,7 @@ semantics (including DCGs), and sections about it will also be added to the docu
 when they are ready for that. For now, the document focuses on the
 \emph{formal semantics} of the recipe, and less so on any specific
 \emph{implementation} of it.
-  
+
 \paragraph{Formal semantics for the recipe.}
 %
 Programs in this recipe have a pair of closely-related formal semantics: a
@@ -217,9 +217,9 @@ This document is organized as follows:
 \begin{itemize}
 
 \item Section \ref{sec:collections} introduces the recipe's approach to programming with collection-based data structures like sequences, sets and finite maps.  The concepts introduced here are used in subsequent section's program examples.
-  
+
 \item Section \ref{sec:symbolic-space-and-time} introduces the idea of symbols and their possible program syntax.  We introduce the idea of the ``symbolic store'' used by the reference semantics.  The graphical semantics builds on these ideas and adds the concept of recording evaluation traces for these store effects.
-  
+
 \item Section \ref{sec:programs} gives some prototypical syntax
   extensions for working with symbolic space and time.
   %
@@ -230,7 +230,7 @@ This document is organized as follows:
   In practice,
   the new syntax for \ottkw{put}, \ottkw{get}, and \ottkw{force} may
   repurpose some existing syntax in the host PL, rather than use these
-  particular keywords.  
+  particular keywords.
 
 \item Section \ref{sec:reference-dynamics} presents the reference dynamics.
 
@@ -249,8 +249,43 @@ This document is organized as follows:
   complete, sections about that would include a description of it, and
   an experimental evaluation with practical time and space
   measurements.
-  
+
 \end{itemize}
+
+\newpage
+
+\section{Diagrams}
+
+\begin{tikzpicture}[
+    thunkCell/.style={rectangle, rounded corners=5pt, draw, thick, fill=white!90!gray, inner sep=5pt},
+    nonthunkCell/.style={rectangle, rounded corners=0.6pt, draw, fill=white!90!gray, inner sep=5pt},
+    cons/.style={rectangle, rounded corners=1.3pt, draw, fill=white},
+    description/.style={draw=none, fill=white},
+    pointer/.style={->, thick, >=Stealth, dotted},
+    connection/.style={->, thick, color=blue!50!black, opacity=0.7},
+    edge/.style={->, thick, >=Stealth, blue!50!black},
+    edgeNum/.style={near start, above, draw=none},
+    fieldLabel/.style={near start, above, draw=none, fill=white},
+    cellName/.style={draw=none, fill=white},
+  ]
+  \begin{scope}
+    \node[thunkCell] (A1) at (0,0) {$A$};
+    \node[description] (d1) at (5.5,0) {Thunk cell at space~$A$};
+
+    \node[nonthunkCell] (A2) at (0,-1) {$A$};
+    \node[description] (d2) at (5.5,-1) {non-thunk cell at space~$A$};
+
+    \node[cons] (cons1) at (0,-2) {$s~|~x~|~p$};
+    \node[description] (d3) at (5.5,-2) {Data record, tuple~$(s,x,p)$};
+
+    \node[nonthunkCell,minimum width=52pt,minimum height=29pt] (A3) at (0,-3.5) {};
+    \node[cons] (cons2) at (0,-3.5) {$s~|~x~|~p$};
+    \node[description] (d4) at (5.5,-3.5) {Cell~$A$ holds tuple~$(s,x,p)$};
+    \node[cellName, left=1pt of A3] (AThreeName) {$A$};
+
+
+  \end{scope}
+\end{tikzpicture}
 
 \newpage
 
@@ -276,7 +311,7 @@ simplicity.
   sequences, sets or finite maps of some certain element types) we say
   that binary tree representation~$\ottkw{tree}$ is \emph{harmonious}
   if it enjoys two properties:
-\begin{itemize}  
+\begin{itemize}
 
 \item \textbf{balance}: For each structure $S \in \mathcal{S}$, the
   corresponding tree $T = \ottkw{tree}(S)$ consists of \emph{balanced
@@ -369,7 +404,7 @@ to do
   \begin{scope}[root]
     \node[scale=2.0, cloud] (here-now) at (0,0) {\texttt{here/now}};
   \end{scope}
-  
+
 % Layer A: Tree A
   \begin{scope}[layerA]
   \node (A1) at (0,0) {A1};
@@ -500,7 +535,7 @@ partial order defined inductively over the stores, as follows:
   \drule{AXXcache}
 \end{mathpar}
 \[
-\drule{AXXequiv}  
+\drule{AXXequiv}
 \]
 
 \noindent
@@ -703,7 +738,7 @@ cells of global state are created and accessed.
   \ottCxtVerb
   \\
   \ottCxtDim
-}  
+}
 
 \noindent
 The syntax we show above is clear, but not concise.
@@ -826,7 +861,7 @@ Each value put into the store can either be a thunk or a non-thunk value.
 For a thunk, the store update syntax $[[Store{pp |-> (Space, v)}]]$
 means that $[[v = thunk((e))]]$ for some expression~$[[e]]$,
 and this update is defined as $[[Store{pp |-> Thunk(Space, e, empty)}]]$.
-Alternatively, when $[[v /= thunk((e))]]$, 
+Alternatively, when $[[v /= thunk((e))]]$,
 the update ignores the space~$[[Space]]$ and is defined instead as $[[Store{pp |-> NonThunk v}]]$.
 
 
@@ -897,7 +932,7 @@ including the creation of sub-spaces and sub-moments (\rref{E-withinSpace} and \
 %  \hline
 %  &&
 %  \\[2mm]
-  
+
   \texttt{goto}
   &
   \drule{EXXgotoSpace}
@@ -947,7 +982,7 @@ The nodes in the graph correspond to the cells of the store structure in the ref
 Each node is identified by a full pointer, and a ``meta moment'', which we explain shortly.
 
 The edges of the graph each have a unique identifier (some natural number~$[[n]]$) and each corresponds to a store-based action performed by the program~($\ottkw{put}$, $\ottkw{get}$ or $\ottkw{force}$).
-  
+
 \ottgrammartabular{
   \ottGraph
 }
@@ -1500,7 +1535,7 @@ Specifically, each named write in a from-scratch consistent program execution is
 
 \begin{itemize}
 \item \textbf{unique}, meaning each named write is globally unique within the graph.
-  
+
 \item \textbf{causal}, meaning not read before that unique write has first been incorporated into the repaired graph, by repairing the computation that performs it.  It would be \emph{acausal} to, for example, reorder the memoization of a read to precede the write from which it reads.
 \end{itemize}
 

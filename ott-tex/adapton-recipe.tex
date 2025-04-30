@@ -19,8 +19,8 @@
 \usetikzlibrary{positioning,calc,3d,backgrounds}
 \usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
 \usepackage{cleveref}
+% \usepackage{refcheck} % -- refcheck is not compatible with cleveref, after all.
 
-\usepackage{refcheck}
 \usepackage{nag}
 
 \lstdefinelanguage{MotokoWithAdapton}{
@@ -234,9 +234,16 @@ This document is organized as follows:
 
 \begin{itemize}
 
-\item \Cref{sec:collections} introduces the recipe's approach to programming with collection-based data structures like sequences, sets and finite maps.  The concepts introduced here are used in subsequent section's program examples.
+\item \Cref{sec:collections} introduces the recipe's approach to
+  programming with collection-based data structures like sequences,
+  sets and finite maps.  The concepts introduced here are used in
+  subsequent section's program examples.
 
-\item \Cref{sec:symbolic-space-and-time} introduces the idea of symbols and their possible program syntax.  We introduce the idea of the ``symbolic store'' used by the reference semantics.  The graphical semantics builds on these ideas and adds the concept of recording evaluation traces for these store effects.
+\item \Cref{sec:symbolic-space-and-time} introduces the idea of
+  symbols and their possible program syntax.  We introduce the idea of
+  the ``symbolic store'' used by the reference semantics.  The
+  graphical semantics builds on these ideas and adds the concept of
+  recording evaluation traces for these store effects.
 
 \item \Cref{sec:programs} gives some prototypical syntax
   extensions for working with symbolic space and time.
@@ -393,7 +400,7 @@ representations as binary trees.
 
 Mathematically, a sequence is a monoid.
 %
-we use this relationship to monoids as an approach to representing sequences,
+We use this relationship to monoids as an approach to representing sequences,
 as is common functional programming.
 %
 These instances consist of immutable sequences, like in functional programming,
@@ -408,23 +415,24 @@ It has three forms:
 
 \item The \textbf{singleton data} form carries a value of some data type that is common to the entire monoid (e.g., ``integer'', ``database record'', etc.); these elements carry the relevant ``data'' of the monoid structure.
 
-\item A special \textbf{empty element}, (e.g., $0$) which ``cancels'' the binary operation by ``serving as its identity element'' (meaning that $0 + R = R$ and $L + 0 = L$ holds for all $L$ and $R$).
+\item A special \textbf{empty element}, (e.g., $0$) which ``cancels'' the append operation mathematically, meaning that $0 + R = R$ and $L + 0 = L$ holds for all instances $L$ and $R$.
 
-\item The \textbf{append node} appends two existing monoid structures,  $L + R$; this form reflects the various choices of how to combine/divide within the mathematical monoid structure, since $A + (B + C) \equiv (A + B) + C$, for all choices of $A, B$ and $C$.
-
-  Recall that monoids are \emph{associative}, meaning that the order of elements cannot be changed without changing the monoid (sequence) being represented, but by contrast, the placement of append nodes can be altered freely by the mathematical identity usually called ``associativity'', without affecting the sequence being represented.
+\item The \textbf{append node} that appends two existing instances, $L + R$; the placement of this form reflects the various choices of how to combine/divide within the mathematical monoid structure, since $A + (B + C) \equiv (A + B) + C$, for all choices of $A, B$ and $C$: Recall that monoids are \emph{associative}, meaning that the order of elements cannot be changed without changing the monoid (sequence) being represented, but by contrast, the placement of append nodes can be altered freely by the mathematical identity usually called ``associativity'' (stated above as $A + (B + C) \equiv (A + B) + C$), without affecting the sequence being represented.
 
 \end{itemize}
 
-These forms permit a program to ``generate'' the monoid structure for
-some relevant sequence of elements, in preparation for doing something
+These forms permit a program to ``generate'' harmonious monoid structures for
+a relevant sequence of elements, in preparation for doing something
 else with that sequence that involves each element, such as
 determining the max element, the min element, the median element, or
 even sorting it upon demand into a new, output sequence.
+
+By using harmonious structures for sequences in our programs, the Adapton Recipe will provide an efficient
+incremental change propagation algorithm, behind the scenes.
 %
 In the remainder of this section, we work towards that final example
-(demand-driven sorted output sequence), building the needed components
-in stages.
+(demand-driven sorted output sequence), building the needed program components
+in stages, including the generation and reduction of monoids (sequences) that are harmonious.
 
 \subsection{Monoid generation}
 
@@ -1216,7 +1224,7 @@ their happenstance natural numbers.
 There are five rules for dirtying a set of relevant edges, expressed as a sequence~$[[t]]$.
 %
 Two cases express the monoidal structure of the
-sequence (\rref{DT-empty, DT-binary}), and
+sequence (\rref{DT-empty,DT-binary}), and
 three cases express the possible situations for dirtying each edge/action
 (\rref{DT-alreadyDirty}, \rref{DT-cleanIntoDirty},
 \rref{DT-stillClean}).

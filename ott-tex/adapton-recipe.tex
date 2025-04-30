@@ -20,6 +20,9 @@
 \usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
 \usepackage{cleveref}
 
+\usepackage{refcheck}
+\usepackage{nag}
+
 \lstdefinelanguage{MotokoWithAdapton}{
   morekeywords={fun,let,put,get,force,do},
   sensitive=true
@@ -951,7 +954,7 @@ It is not defined when no such moment exists.
 There are three cases for forcing a stored thunk (pointer).
 %
 Recall that this makes four cases for~$\ottkw{force}$ in total,
-as \rref{E-force} handles the ordinary, non-pointer case.
+as \rref{E-forceThunk} handles the ordinary, non-pointer case.
 
 \begin{mathpar}
 \drule{EXXemptyForce}
@@ -962,7 +965,7 @@ as \rref{E-force} handles the ordinary, non-pointer case.
 When stored, the thunk's cache is either empty (\rref{E-emptyForce}),
 or it has a store-value pair.
 %
-To fill an empty cell, \rref{E-empty} evaluates the thunk body (under
+To fill an empty cell, \rref{E-emptyForce} evaluates the thunk body (under
 the original stored space) and caches the result and initial store.
 
 \Rref{E-reuseForce} captures the situation where that cached value was produced
@@ -1451,6 +1454,7 @@ Both of the following hold:
   \end{array}$
 \end{itemize}
 
+
 \end{document}
 
 % ------------------------------------------------------------------
@@ -1724,3 +1728,4 @@ The key challenge is increasing the possible composition patterns
 supported by Adapton so that the entire interactive development
 experience one enjoys today could be expressed concisely, and its
 redundant parts exploited efficiently in practice.
+

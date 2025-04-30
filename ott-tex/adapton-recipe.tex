@@ -292,7 +292,7 @@ This document is organized as follows:
 \label{sec:collections}
 
 The recipe uses \textbf{binary trees} of a certain flavor to represent
-each each collection type (set, partial map, or sequence).
+each each collection type, such as set, partial map, or sequence.
 %
 Other tree arities are possible too, using more general definitions
 and algorithms, but in this recipe, we focus on binary trees for
@@ -300,37 +300,36 @@ simplicity.
 %
 
 \begin{definition}[Tree representation]
-  Given a set of mathematical structures~$\mathcal{S}$ with a certain type~$\tau$ (like
-  sequence, set or finite map of some other element type) we say
-  that $\ottkw{tree}$ is a \emph{(binary) tree representation} if:
+  Given a set of mathematical structures~$\mathcal{S}$ with a common
+  collection type~$\tau$ we say that
+  representation function $\ottkw{tree} : \tau \rightarrow \texttt{Tree<X,Y>}$ is a
+  \emph{(binary) tree representation} if:
   \begin{itemize}
-  \item $\ottkw{tree}$ has a representation that is isomorphic to the
+  \item The output of $\ottkw{tree}$ has a representation that is isomorphic to the
     following recursive sum type:
     \[
-    \texttt{Tree<X,Y>} \equiv \texttt{\{\#empty; \#elm(X); \#bin(Tree, Y, Tree)\}}
+    \texttt{Tree<X,Y>} \equiv \texttt{\{\#empty; \#elment(X); \#binary(Tree, Y, Tree)\}}
     \]
-  \item Where type $X$ carries the data associated with the elements of each $s \in S$.
+  \item Where type \texttt{X} carries the data associated with the elements of each structure~$S : \tau \in \mathcal{S}$.
     
-  \item And where, by contrast, $Y$
-    carries any \emph{meta data} needed to \emph{locate} the elements of type $X$,
+  \item And where, by contrast, \texttt{Y}
+    carries any \emph{meta data} needed to \emph{locate} the elements of type \texttt{X},
     but \emph{not} those elements themselves.
 
-  \item In other words, $\ottkw{tree}$ has a representation that can
+  \item In other words, $\ottkw{tree}$ gives a representation that can
     be traversed like a binary tree, with element data at the leaves
-    and navigation data at the binary nodes; and, this representation
-    can be generated with those same constructor forms.
+    and navigation data at the binary nodes.
     
   \end{itemize}
 \end{definition}
 
 \subsection{Harmonious binary trees}
 
-A binary tree representation may not be adequate or practical if it
+A binary tree representation may not be well-adapted for the Adapton Recipe if it
 lacks certain properties related to how it adapts to change, and
-integrates with other data structures around it.
+how it integrates with other data structures around it during changes.
 %
-We introduce the recipe's approach to collections like sequences,
-sets, and finite maps based on the concept of \emph{harmonious trees},
+We build the recipe's approach to collections based on the concept of \emph{harmonious trees},
 a term of art that we introduce for the first time here, based on
 intuitions and related definitions developed in prior work.
 
@@ -373,12 +372,13 @@ representations as binary trees.
 
 \subsection{Incremental sequences}
 
-Mathematically, a sequence is a monoid.  As commonly found in
-functional programming, we use this relationship as an approach to
-representing sequences.
+Mathematically, a sequence is a monoid.
 %
-These consist of immutable sequences, like in functional programming,
-but also sequences that can change from moment to moment.
+we use this relationship to monoids as an approach to representing sequences,
+as is common functional programming.
+%
+These instances consist of immutable sequences, like in functional programming,
+but also sequences that can change in various ways, as necessary.
 
 In data structure terms, a \emph{monoid} is an inductive (tree-shaped)
 structure that represents a sequence of data elements with an associative ``append'' operation.
@@ -386,9 +386,15 @@ structure that represents a sequence of data elements with an associative ``appe
 It has three forms:
 
 \begin{itemize}
+
 \item The \textbf{singleton data} form carries a value of some data type that is common to the entire monoid (e.g., ``integer'', ``database record'', etc.); these elements carry the relevant ``data'' of the monoid structure.
-\item The \textbf{binary node} form of two monoid structures (e.g., $L + R$), which sends this pair into a third monoid representing their being appended; this form reflects the choices of how to combine/divide within the monoid sequence structure.
+
 \item A special \textbf{empty element}, (e.g., $0$) which ``cancels'' the binary operation by ``serving as its identity element'' (meaning that $0 + R = R$ and $L + 0 = L$ holds for all $L$ and $R$).
+
+\item The \textbf{append node} appends two existing monoid structures,  $L + R$; this form reflects the various choices of how to combine/divide within the mathematical monoid structure, since $A + (B + C) \equiv (A + B) + C$, for all choices of $A, B$ and $C$.
+
+  Recall that monoids are \emph{associative}, meaning that the order of elements cannot be changed without changing the monoid (sequence) being represented, but by contrast, the placement of append nodes can be altered freely by the mathematical identity usually called ``associativity'', without affecting the sequence being represented.
+
 \end{itemize}
 
 These forms permit a program to ``generate'' the monoid structure for

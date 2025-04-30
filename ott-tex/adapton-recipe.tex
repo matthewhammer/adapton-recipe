@@ -15,7 +15,22 @@
 \usepackage{geometry}
 \usepackage{graphicx}
 \usepackage{tikz}
+\usepackage{listings}
 \usetikzlibrary{positioning,calc,3d,backgrounds}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
+\usepackage{cleveref}
+
+\lstdefinelanguage{MotokoWithAdapton}{
+  morekeywords={fun,let,put,get,force,do},
+  sensitive=true
+}
+\lstdefinestyle{AdaptonRecipeCode}{
+  language=MotokoWithAdapton,
+  basicstyle=\ttfamily,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray}\itshape,
+  tabsize=2
+}
 
 % \usepackage{bm} % bold tt font in math mode
 
@@ -216,11 +231,11 @@ This document is organized as follows:
 
 \begin{itemize}
 
-\item Section \ref{sec:collections} introduces the recipe's approach to programming with collection-based data structures like sequences, sets and finite maps.  The concepts introduced here are used in subsequent section's program examples.
+\item \Cref{sec:collections} introduces the recipe's approach to programming with collection-based data structures like sequences, sets and finite maps.  The concepts introduced here are used in subsequent section's program examples.
 
-\item Section \ref{sec:symbolic-space-and-time} introduces the idea of symbols and their possible program syntax.  We introduce the idea of the ``symbolic store'' used by the reference semantics.  The graphical semantics builds on these ideas and adds the concept of recording evaluation traces for these store effects.
+\item \Cref{sec:symbolic-space-and-time} introduces the idea of symbols and their possible program syntax.  We introduce the idea of the ``symbolic store'' used by the reference semantics.  The graphical semantics builds on these ideas and adds the concept of recording evaluation traces for these store effects.
 
-\item Section \ref{sec:programs} gives some prototypical syntax
+\item \Cref{sec:programs} gives some prototypical syntax
   extensions for working with symbolic space and time.
   %
   This section gives just enough detail to
@@ -232,11 +247,11 @@ This document is organized as follows:
   repurpose some existing syntax in the host PL, rather than use these
   particular keywords.
 
-\item Section \ref{sec:reference-dynamics} presents the reference dynamics.
+\item \Cref{sec:reference-dynamics} presents the reference dynamics.
 
-\item Section \ref{sec:graphical-dynamics} presents the graphical dynamics.
+\item \Cref{sec:graphical-dynamics} presents the graphical dynamics.
 
-\item Section \ref{sec:from-scratch-consistency} presents a meta theory
+\item \Cref{sec:from-scratch-consistency} presents a meta theory
   about the pair of theories, for reference and graphical dynamics.
   %
   It claims that each derivation in one corresponds
@@ -342,7 +357,8 @@ Beyond trivial examples without loops, this pattern (``iterates over
 data'') applies to nearly all programs we'd like to incrementalize, so
 harmonious trees are relevant behind the scenes in most situations.
 
-\begin{definition}[Harmious tree representation]
+\begin{definition}[Harmonious tree representation]
+  \label{def:harmonious}
   A binary tree representation~$\ottkw{tree}$ is \emph{harmonious} if
   it enjoys two properties:
 \begin{itemize}
@@ -412,7 +428,7 @@ in stages.
 Given a sequence of elements, there are many possible ways to generate a monoid.
 %
 For instance, a linked list is a kind of monoid structure, but it
-doesn't meet either condition that we require for binary trees, as its
+doesn't meet either condition that we require for harmonious binary trees (\cref{def:harmonious}), as its
 only a pathological kind of binary tree (totally imbalanced, and thus
 not change stable either).
 
@@ -425,6 +441,12 @@ to earlier work that established a similar approach), the recipe's
 required.
 
 XXX
+
+\begin{lstlisting}[style=AdaptonRecipeCode]
+fun test(x, y) = do let
+  foo
+\end{lstlisting}
+
 
 to do
 
@@ -539,7 +561,7 @@ directory'' used by a UNIX program when it starts; as with UNIX
 programs, these thunks can create subspaces (akin to UNIX
 subdirectories) and/or may go to other already-existing spaces.
 %
-Section~\ref{sec:refsem-navigation} describes the interaction of
+\Cref{sec:refsem-navigation} describes the interaction of
 programs and space-time in the reference dynamics.
 
 The cache of each thunk cell~$[[StoreValueOption]]$ has one of two states:
@@ -646,7 +668,7 @@ graph to always facilitate equivalent, or more, patterns of cache reuse.
 
 The next subsections introduce the formal syntax for symbols, spaces, moments (of time) and pointers.
 %
-These concepts, along with program syntax~(Section~\ref{sec:programs}) are common to both dynamics.
+These concepts, along with program syntax~(\cref{sec:programs}) are common to both dynamics.
 
 \subsection{Symbols}
 \label{sec:symbols}
@@ -723,7 +745,7 @@ When the program navigates time, this data that is ``becoming'' part
 of the target moment transitions atomically into what ``is'' at that
 target moment where the program arrives.
 %
-Sections~\ref{sec:refsem-navigation} and~\ref{sec:refsem-undelay}
+\Cref{sec:refsem-navigation, sec:refsem-undelay}
 define the reference semantics for navigating space and time, including
 how time navigation ``buffers'' updates in a separate region.
 

@@ -283,7 +283,6 @@ This document is organized as follows:
     \node[description] (d4) at (5.5,-3.5) {Cell~$A$ holds tuple~$(s,x,p)$};
     \node[cellName, left=1pt of A3] (AThreeName) {$A$};
 
-
   \end{scope}
 \end{tikzpicture}
 
@@ -292,25 +291,61 @@ This document is organized as follows:
 \section{Incremental Collections}
 \label{sec:collections}
 
-We introduce the recipe's approach to collections like sequences,
-sets, and finite maps based on the concept of \emph{harmonious trees},
-a term of art that we introduce for the first time here, based on
-intuitions and related definitions developed in prior work.
-
-\subsection{Harmonious binary trees}
-
 The recipe uses \textbf{binary trees} of a certain flavor to represent
 each each collection type (set, partial map, or sequence).
 %
 Other tree arities are possible too, using more general definitions
 and algorithms, but in this recipe, we focus on binary trees for
 simplicity.
+%
+
+\begin{definition}[Tree representation]
+  Given a set of mathematical structures~$\mathcal{S}$ with a certain type~$\tau$ (like
+  sequence, set or finite map of some other element type) we say
+  that $\ottkw{tree}$ is a \emph{(binary) tree representation} if:
+  \begin{itemize}
+  \item $\ottkw{tree}$ has a representation that is isomorphic to the
+    following recursive sum type:
+    \[
+    \texttt{Tree<X,Y>} \equiv \texttt{\{\#empty; \#elm(X); \#bin(Tree, Y, Tree)\}}
+    \]
+  \item Where type $X$ carries the data associated with the elements of each $s \in S$.
+    
+  \item And where, by contrast, $Y$
+    carries any \emph{meta data} needed to \emph{locate} the elements of type $X$,
+    but \emph{not} those elements themselves.
+
+  \item In other words, $\ottkw{tree}$ has a representation that can
+    be traversed like a binary tree, with element data at the leaves
+    and navigation data at the binary nodes; and, this representation
+    can be generated with those same constructor forms.
+    
+  \end{itemize}
+\end{definition}
+
+\subsection{Harmonious binary trees}
+
+A binary tree representation may not be adequate or practical if it
+lacks certain properties related to how it adapts to change, and
+integrates with other data structures around it.
+%
+We introduce the recipe's approach to collections like sequences,
+sets, and finite maps based on the concept of \emph{harmonious trees},
+a term of art that we introduce for the first time here, based on
+intuitions and related definitions developed in prior work.
+
+These trees systematically promote well-behaved, efficient incremental
+behavior by eliminating certain degenerate cases that would otherwise
+arise naturally, especially in code that iterates over data, in
+sequence, to process it.
+%
+Beyond trivial examples without loops, this pattern (``iterates over
+data'') applies to nearly all programs we'd like to incrementalize, so
+harmonious trees are relevant behind the scenes in most situations.
 
 \begin{definition}[Harmious tree representation]
-  Given a set of mathematical structures~$\mathcal{S}$ (like
-  sequences, sets or finite maps of some certain element types) we say
-  that binary tree representation~$\ottkw{tree}$ is \emph{harmonious}
-  if it enjoys two properties:
+  A binary tree representation~$\ottkw{tree}$ is \emph{harmonious} if
+  it enjoys two properties:
 \begin{itemize}
 
 \item \textbf{balance}: For each structure $S \in \mathcal{S}$, the

@@ -23,13 +23,13 @@
 
 \usepackage{nag}
 
-\lstdefinelanguage{MotokoWithAdapton}{
-  morekeywords={fun,let,put,get,force,do},
+\lstdefinelanguage{Fumola}{
+  morekeywords={public,func,let,put,get,force,do,type,module},
   sensitive=true
 }
-\lstdefinestyle{AdaptonRecipeCode}{
-  language=MotokoWithAdapton,
-  basicstyle=\ttfamily,
+\lstdefinestyle{Fumola}{
+  language=Fumola,
+  basicstyle=\small\ttfamily,
   keywordstyle=\color{blue}\bfseries,
   commentstyle=\color{gray}\itshape,
   tabsize=2
@@ -451,15 +451,7 @@ to earlier work that established a similar approach), the recipe's
 \texttt{Seq} trees provide both balance and change stability, as
 required.
 
-XXX
-
-\begin{lstlisting}[style=AdaptonRecipeCode]
-fun test(x, y) = do let
-  foo
-\end{lstlisting}
-
-
-to do
+\lstinputlisting[language=Fumola, style=Fumola, caption={Sequence Tree Generation}, label={lst:seq-tree-gen}]{../examples/SeqTree.fumola}
 
 \subsection{Monoid reduction}
 

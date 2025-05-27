@@ -1,5 +1,6 @@
-# adapton-in-one-paper
-Self-contained explaination of Adapton, in a single approachable paper.
+# Adapton Recipe
+
+A self-contained explaination of Adapton, in a single approachable paper.
 
 #### typesetting tools
 - Latex

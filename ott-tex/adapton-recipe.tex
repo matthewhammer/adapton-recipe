@@ -16,6 +16,12 @@
 \usepackage{graphicx}
 \usepackage{tikz}
 \usepackage{listings}
+
+\usepackage{inconsolata}
+
+%\usepackage{fontspec}
+%\setmonofont{Fira Code} % or JetBrains Mono, Source Code Pro, etc.
+
 \usetikzlibrary{positioning,calc,3d,backgrounds}
 \usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
 \usepackage{cleveref}
@@ -24,16 +30,23 @@
 \usepackage{nag}
 
 \lstdefinelanguage{Fumola}{
-  morekeywords={public,func,let,put,get,force,do,type,module},
+  morekeywords={switch,case,public,func,thunk,if,else,let,put,get,force,do,type,module},
+  literate=
+    {:=}{{{\bfseries\color{blue}:=\ }}}2,
   sensitive=true
 }
 \lstdefinestyle{Fumola}{
   language=Fumola,
-  basicstyle=\small\ttfamily,
+  basicstyle=\fontsize{8.5}{10.2}\selectfont\ttfamily,
   keywordstyle=\color{blue}\bfseries,
-  commentstyle=\color{gray}\itshape,
-  tabsize=2
-}
+  commentstyle=\color{purple}\itshape,
+  morecomment=[l]{//},
+  tabsize=2,
+  columns=fullflexible
+ }
+\lstset{
+  basicstyle=\fontsize{8}{10}\selectfont\ttfamily,
+  }
 
 % \usepackage{bm} % bold tt font in math mode
 
@@ -276,42 +289,6 @@ This document is organized as follows:
   measurements.
 
 \end{itemize}
-
-\newpage
-
-\section{Diagrams}
-
-\begin{tikzpicture}[
-    thunkCell/.style={rectangle, rounded corners=5pt, draw, thick, fill=white!90!gray, inner sep=5pt},
-    nonthunkCell/.style={rectangle, rounded corners=0.6pt, draw, fill=white!90!gray, inner sep=5pt},
-    cons/.style={rectangle, rounded corners=1.3pt, draw, fill=white},
-    description/.style={draw=none, fill=white},
-    pointer/.style={->, thick, >=Stealth, dotted},
-    connection/.style={->, thick, color=blue!50!black, opacity=0.7},
-    edge/.style={->, thick, >=Stealth, blue!50!black},
-    edgeNum/.style={near start, above, draw=none},
-    fieldLabel/.style={near start, above, draw=none, fill=white},
-    cellName/.style={draw=none, fill=white},
-  ]
-  \begin{scope}
-    \node[thunkCell] (A1) at (0,0) {$A$};
-    \node[description] (d1) at (5.5,0) {Thunk cell at space~$A$};
-
-    \node[nonthunkCell] (A2) at (0,-1) {$A$};
-    \node[description] (d2) at (5.5,-1) {non-thunk cell at space~$A$};
-
-    \node[cons] (cons1) at (0,-2) {$s~|~x~|~p$};
-    \node[description] (d3) at (5.5,-2) {Data record, tuple~$(s,x,p)$};
-
-    \node[nonthunkCell,minimum width=52pt,minimum height=29pt] (A3) at (0,-3.5) {};
-    \node[cons] (cons2) at (0,-3.5) {$s~|~x~|~p$};
-    \node[description] (d4) at (5.5,-3.5) {Cell~$A$ holds tuple~$(s,x,p)$};
-    \node[cellName, left=1pt of A3] (AThreeName) {$A$};
-
-  \end{scope}
-\end{tikzpicture}
-
-\newpage
 
 \section{Incremental Collections}
 \label{sec:collections}
@@ -1453,6 +1430,45 @@ Both of the following hold:
   ~~\bigwedge~~ [[Graph1; Path; Moment; m; Space |- e !! Graph2; t; v ]]
   \end{array}$
 \end{itemize}
+
+
+
+
+\newpage
+
+\section{Diagrams}
+
+\begin{tikzpicture}[
+    thunkCell/.style={rectangle, rounded corners=5pt, draw, thick, fill=white!90!gray, inner sep=5pt},
+    nonthunkCell/.style={rectangle, rounded corners=0.6pt, draw, fill=white!90!gray, inner sep=5pt},
+    cons/.style={rectangle, rounded corners=1.3pt, draw, fill=white},
+    description/.style={draw=none, fill=white},
+    pointer/.style={->, thick, >=Stealth, dotted},
+    connection/.style={->, thick, color=blue!50!black, opacity=0.7},
+    edge/.style={->, thick, >=Stealth, blue!50!black},
+    edgeNum/.style={near start, above, draw=none},
+    fieldLabel/.style={near start, above, draw=none, fill=white},
+    cellName/.style={draw=none, fill=white},
+  ]
+  \begin{scope}
+    \node[thunkCell] (A1) at (0,0) {$A$};
+    \node[description] (d1) at (5.5,0) {Thunk cell at space~$A$};
+
+    \node[nonthunkCell] (A2) at (0,-1) {$A$};
+    \node[description] (d2) at (5.5,-1) {non-thunk cell at space~$A$};
+
+    \node[cons] (cons1) at (0,-2) {$s~|~x~|~p$};
+    \node[description] (d3) at (5.5,-2) {Data record, tuple~$(s,x,p)$};
+
+    \node[nonthunkCell,minimum width=52pt,minimum height=29pt] (A3) at (0,-3.5) {};
+    \node[cons] (cons2) at (0,-3.5) {$s~|~x~|~p$};
+    \node[description] (d4) at (5.5,-3.5) {Cell~$A$ holds tuple~$(s,x,p)$};
+    \node[cellName, left=1pt of A3] (AThreeName) {$A$};
+
+  \end{scope}
+\end{tikzpicture}
+
+\newpage
 
 
 \end{document}

@@ -7,22 +7,22 @@
 
 \usepackage{makecell}
 \usepackage{charter}
-%\usepackage{euler}
-\usepackage{inconsolata}
 \usepackage{xcolor}
 \usepackage[alternateNonterms]{ottalt}
 \usepackage{amsmath,amsthm}
 \usepackage{geometry}
 \usepackage{graphicx}
-\usepackage{tikz}
-\usepackage{listings}
 
-\usepackage{inconsolata}
+\usepackage{listings}
+\usepackage[edges]{forest}
+
+% \usepackage{inconsolata}
 
 %\usepackage{fontspec}
 %\setmonofont{Fira Code} % or JetBrains Mono, Source Code Pro, etc.
 
-\usetikzlibrary{positioning,calc,3d,backgrounds}
+% \usetikzlibrary{positioning,calc,3d,backgrounds}
+
 \usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
 \usepackage{cleveref}
 % \usepackage{refcheck} % -- refcheck is not compatible with cleveref, after all.
@@ -79,6 +79,9 @@
 \maketitle
 
 \linenumbers
+
+\newcommand{\SeqTreeBinaryNode}[2]{\begin{tabular}{c}#1\\--\end{tabular}}
+\newcommand{\SeqTreeElement}[2]{\begin{tabular}{c}#1\\#2\end{tabular}}
 
 \section{Introduction}
 
@@ -428,7 +431,16 @@ to earlier work that established a similar approach), the recipe's
 \texttt{Seq} trees provide both balance and change stability, as
 required.
 
+\begin{figure}
+  \begin{center}
+  \input{mergeSort-inputSeq}
+  % todo -- input an image of the original sequence, as a linked list
+  \end{center}
+  \caption{\texttt{mergeSort} input sequence, as a harmonious tree.}
+\end{figure}
+
 \lstinputlisting[language=Fumola, style=Fumola, caption={Sequence Tree Generation}, label={lst:seq-tree-gen}]{../examples/SeqTree.fumola}
+
 
 \subsection{Monoid reduction}
 

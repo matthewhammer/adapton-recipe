@@ -46,7 +46,7 @@ module {
   };
 
   #[listing]
-  func fromIterRec<X>(iter : Iter<(Symbol, X)>, left : Pointer<SeqTree<X>>, parentLevel : ?Nat) : Pointer<SeqTree<X>> {
+  func fromIterRec<X>(iter : Iter<(Symbol, X)>, left : SeqTree_<X>, parentLevel : ?Nat) : SeqTree_<X> {
     switch (iter.next()) {
       case null left;
       case (?(symbol, element)) {

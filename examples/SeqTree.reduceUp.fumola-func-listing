@@ -1,0 +1,23 @@
+func reduceUp(
+  t: SeqTree<X>,
+  empty: Y,
+  element: (Symbol, X) -> Y,
+  binary: (Symbol, Y, Y) -> Y
+) : Y {
+  switch t {
+    case (#empty) empty;
+    case (#element(e)) element(e.symbol, e.element);
+    case (#binary(b))
+    {
+      force (
+        b.symbol := thunk {
+          binary(
+            b.symbol,
+            reduceUp(@ (b.left), empty, element, binary),
+            reduceUp(@ (b.right), empty, element, binary)
+          )
+        }
+      )
+    };
+  }
+}

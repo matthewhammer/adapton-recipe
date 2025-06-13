@@ -30,23 +30,21 @@
 \usepackage{nag}
 
 \lstdefinelanguage{Fumola}{
-  morekeywords={switch,case,public,func,thunk,if,else,let,put,get,force,do,type,module},
+  morekeywords={switch,case,public,func,thunk,if,else,let,force,do,type,module},
+  sensitive=true,
   literate=
-    {:=}{{{\bfseries\color{blue}:=\ }}}2,
-  sensitive=true
+    {:=}{{{\bfseries\color{blue}:=\ }}}2
+    {@}{{{\bfseries\color{blue}@}}}1
 }
 \lstdefinestyle{Fumola}{
   language=Fumola,
-  basicstyle=\fontsize{8.5}{10.2}\selectfont\ttfamily,
+  basicstyle=\fontsize{10}{12}\selectfont\ttfamily,
   keywordstyle=\color{blue}\bfseries,
   commentstyle=\color{purple}\itshape,
   morecomment=[l]{//},
   tabsize=2,
   columns=fullflexible
  }
-\lstset{
-  basicstyle=\fontsize{8}{10}\selectfont\ttfamily,
-  }
 
 % \usepackage{bm} % bold tt font in math mode
 
@@ -80,8 +78,8 @@
 
 \linenumbers
 
-\newcommand{\SeqTreeBinaryNode}[2]{\begin{tabular}{c}#1\\--\end{tabular}}
-\newcommand{\SeqTreeElement}[2]{\begin{tabular}{c}#1\\#2\end{tabular}}
+\newcommand{\SeqTreeBinaryNode}[2]{\begin{tabular}{|c|}\hline{\ttfamily\itshape \color{gray}{#1}}\\\hline {\tiny #2}\\\hline\end{tabular}}
+\newcommand{\SeqTreeElement}[2]{\begin{tabular}{|c|}\hline{\ttfamily\itshape\color{gray}{#1}}\\\hline\bfseries #2\\\hline\end{tabular}}
 
 \section{Introduction}
 
@@ -431,6 +429,53 @@ to earlier work that established a similar approach), the recipe's
 \texttt{Seq} trees provide both balance and change stability, as
 required.
 
+\newcommand{\CaptionToggle}[1]{} % off
+
+\begin{figure}
+  \begin{tabular}[t]{|p{0.382\textwidth}|p{0.618\textwidth}|}
+  \hline
+  \begin{minipage}[t]{0.382\textwidth}
+  \vspace{0pt} % <-- Required for top alignment inside minipage
+  \lstinputlisting[language=Fumola, style=Fumola,\CaptionToggle{\texttt{SeqTree} type.}, captionpos=b, label={lst:SeqTree}]{../examples/SeqTree.SeqTree.fumola-type-listing}
+  \lstinputlisting[language=Fumola, style=Fumola]{../examples/SeqTree.Element.fumola-type-listing}
+  \lstinputlisting[language=Fumola, style=Fumola]{../examples/SeqTree.Binary.fumola-type-listing}
+  \lstinputlisting[language=Fumola, style=Fumola,\CaptionToggle{\texttt{Element}, \texttt{Binary} and \texttt{SeqTree\_} types.}, captionpos=b, label={lst:SeqTree_}]{../examples/SeqTree.SeqTree_.fumola-type-listing}
+  \end{minipage}
+  &
+  \begin{minipage}[t]{0.618\textwidth}
+  \lstinputlisting[language=Fumola, style=Fumola,\CaptionToggle{\texttt{reduceUp}, a function over \texttt{SeqTree}.}, captionpos=b, label={lst:SeqTree-reduceUp}]{../examples/SeqTree.reduceUp.fumola-func-listing}
+  \end{minipage}
+  \\
+  \hline
+\end{tabular}
+\end{figure}
+
+\forestset{
+  declare styles={
+    internal/.style={
+      draw,
+      rectangle,
+      thick,
+      fill=gray!20,
+    },
+    leaf/.style={
+      draw,
+      rounded corners,
+      dashed,
+      fill=blue!15,
+    }
+  }
+}
+
+
+\forestset{
+  SeqTree/.style={
+    for tree={
+      draw,
+    }
+  }
+}
+
 \begin{figure}
   \begin{center}
   \input{mergeSort-inputSeq}
@@ -438,6 +483,46 @@ required.
   \end{center}
   \caption{\texttt{mergeSort} input sequence, as a harmonious tree.}
 \end{figure}
+
+
+\forestset{
+  SeqTree/.style={
+    for tree={
+      draw,
+      scale=0.28,
+    }
+  }
+}
+
+\begin{figure}
+  \begin{center}
+  \input{mergeSort-inputSeqBig}
+  % todo -- input an image of the original sequence, as a linked list
+  \end{center}
+  \caption{\texttt{mergeSort} ``big'' input sequence, as a harmonious tree.}
+\end{figure}
+
+
+
+\forestset{
+  SeqTree/.style={
+    for tree={
+      draw,
+      scale=0.58,
+    }
+  }
+}
+
+\begin{figure}
+  \begin{center}
+  \input{mergeSort-inputSeq}
+  % todo -- input an image of the original sequence, as a linked list
+  \end{center}
+  \caption{\texttt{mergeSort} input sequence, as a harmonious tree.}
+\end{figure}
+
+
+
 
 \lstinputlisting[language=Fumola, style=Fumola, caption={Sequence Tree Generation}, label={lst:seq-tree-gen}]{../examples/SeqTree.fumola}
 
@@ -523,7 +608,7 @@ within the changing data structures, and also the changing DCG living
 behind the scenes.
 
 Informally, these symbols (or ``names'') identify distinct positions
-in space, and distinct steps in time, in a way where ``similar''
+in space, and distinct steps in time, in a way where ``similar''  
 evaluations will use ``similar'' names for ``similar'' purposes.
 %
 In the reference semantics, there is no DCG and the symbols help the

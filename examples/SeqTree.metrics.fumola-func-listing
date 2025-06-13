@@ -1,0 +1,20 @@
+func metrics(tree: Pointer<SeqTree<X>>){
+  switch (@ tree) {
+    case (#empty) { {depth=0; size=0; leastBalance=null} };
+    case (#element(e)) { {depth=1; size=1; leastBalance=null} };
+    case (#binary(b))
+    {
+      let ml = metrics(b.left);
+      let mr = metrics(b.right);
+      {
+        depth=max(ml.depth, mr.depth) + 1;
+        size=ml.size + mr.size;
+        leastBalance=leastBalance(
+          ml.leastBalance,
+          mr.leastBalance,
+          ?(ml.size, mr.size)
+        )
+      }
+    };
+  }
+}

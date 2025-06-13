@@ -1,0 +1,20 @@
+func lazyMergeSort(t: SeqTree<X>) : LazyList<X> {
+  do within space `lazyMergeSort{
+    reduceUp(
+      t,
+      null,
+      func (symbol: Symbol, element: X) : LazyList<X> {
+        symbol := thunk {
+          ?{symbol=symbol; element; next=`null := nullThunk}
+        }
+      },
+      func (
+        symbol: Symbol,
+        xs: LazyList<X>,
+        ys: LazyList<X>
+      ) : LazyList<X> {
+        do within space (`merge - symbol){ merge(xs, ys) }
+      },
+    )
+  }
+}

@@ -1,0 +1,7 @@
+func listFromIter(iter: Iter<(Symbol, X)>) : List<X> {
+  switch (iter.next()) {
+    case null null;
+    case (?(symbol, element))
+    { ?{symbol=symbol; element; next=listFromIter(iter)} }
+  }
+}

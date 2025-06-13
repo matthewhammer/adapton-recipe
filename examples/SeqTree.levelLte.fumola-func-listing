@@ -1,0 +1,3 @@
+func levelLte(level: Nat, parentLevel: ?Nat) : bool {
+  switch parentLevel { case null true; case (?p) level <= p; }
+}

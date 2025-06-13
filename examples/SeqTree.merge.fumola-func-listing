@@ -1,0 +1,26 @@
+func merge(xs: LazyList<X>, ys: LazyList<X>) : LazyList<X> {
+  switch (force xs, force ys) {
+    case (_, null) xs;
+    case (null, _) ys;
+    case (?xc, ?yc)
+    {
+      if (xc.element <= yc.element) {
+        xc.symbol := thunk {
+          ?{
+            element=xc.element;
+            symbol=xc.symbol;
+            next=merge(xc.next, ys)
+          }
+        }
+      } else {
+        yc.symbol := thunk {
+          ?{
+            element=yc.element;
+            symbol=yc.symbol;
+            next=merge(xs, yc.next)
+          }
+        }
+      }
+    };
+  }
+}

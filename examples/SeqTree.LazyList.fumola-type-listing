@@ -1,0 +1,1 @@
+type LazyList = Pointer<Thunk<LazyList_<X>>>

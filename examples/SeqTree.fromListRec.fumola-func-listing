@@ -1,0 +1,30 @@
+func fromListRec(list: List<X>, left: SeqTree_<X>, parentLevel: ?Nat) : (
+  SeqTree_<X>,
+  List<X>
+) {
+  switch list {
+    case null (left, null);
+    case (?{symbol; element; next})
+    {
+      let level = prim "symbolLevel"symbol;
+      if (levelLte(level, parentLevel)) {
+        let rightLeft = symbol - `element := #element {
+          symbol=symbol;
+          element
+        };
+        let (right, next) = force (
+          symbol - `rec1 := thunk { fromListRec(next, rightLeft, ?level) }
+        );
+        let left = symbol - `binary := #binary {
+          symbol=symbol;
+          level;
+          left;
+          right
+        };
+        force (
+          symbol - `rec2 := thunk { fromListRec(next, left, parentLevel) }
+        );
+      } else { (left, list) }
+    };
+  }
+}

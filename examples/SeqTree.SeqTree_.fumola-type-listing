@@ -1,0 +1,1 @@
+type SeqTree_ = Pointer<SeqTree<X>>

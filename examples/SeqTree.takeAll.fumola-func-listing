@@ -1,0 +1,11 @@
+func takeAll(l: LazyList<X>) : [(Symbol, X)] {
+  prim "debugPrint"("takeAll-l", l);
+  switch (force l) {
+    case null [];
+    case (?lc)
+    {
+      prim "debugPrint"("takeAll-lc", lc);
+      [(lc.symbol, lc.element)] # takeAll(lc.next)
+    }
+  }
+}

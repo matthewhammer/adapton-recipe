@@ -1,0 +1,6 @@
+type Binary =  {
+  symbol : Symbol;
+  level : Nat;
+  left : SeqTree_<X>;
+  right : SeqTree_<X>
+}

@@ -1,0 +1,5 @@
+type SeqTree = {
+  #empty;
+  #element : Element<X>;
+  #binary : Binary<X>
+}

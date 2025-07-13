@@ -1,5 +1,5 @@
 type LazyListCell =  {
   element : X;
   symbol : Symbol;
-  next : LazyList<X>;
+  next : LazyList_<X>;
 }

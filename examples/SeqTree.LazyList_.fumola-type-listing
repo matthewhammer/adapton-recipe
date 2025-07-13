@@ -1,1 +1,1 @@
-type LazyList_ = ?LazyListCell<X>
+type LazyList_ = Pointer<Thunk<LazyList<X>>>

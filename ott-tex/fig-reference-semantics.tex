@@ -1,0 +1,53 @@
+
+\begin{figure}
+    \footnotesize
+    \[
+\begin{array}{lc}
+\scalebox{2.0}{\boxed{
+  [[Store1; Path; Moment; Space |- e !! Store2; v]]
+}}
+&
+\begin{array}{p{4in}}
+  ``
+  Under store~$[[Store1]]$,
+  path~$[[Path]]$,
+  space~$[[Space]]$,
+  and
+  moment~$[[Moment]]$,\\
+  \hspace{3mm}~expression~$[[e]]$ evaluates fully,\\
+  \hspace{6mm}~resulting in store~$[[Store2]]$ and value~$[[v]]$.
+  ''
+\end{array}
+\end{array}
+\]
+
+\begin{mathpar}
+    \footnotesize
+  \drule{EXXthunk}
+  \drule{EXXforceThunk}
+
+  \drule{EXXsym}
+  \drule{EXXsymMinus}
+  \drule{EXXsymDot}
+  \drule{EXXsymApp}
+  
+  \drule{EXXputImmediate}
+  \drule{EXXputDelay}
+  
+  \drule{EXXgetNonThunk}
+  \drule{EXXgetThunk}
+
+  \drule{EXXemptyForce}
+  \drule{EXXreuseForce}
+  \drule{EXXredoForce}
+
+  \drule{EXXhere}
+  \drule{EXXnow}
+  \drule{EXXgotoSpace}
+  \drule{EXXgotoMoment}
+  \drule{EXXwithinSpace}
+  \drule{EXXwithinMoment}
+\end{mathpar}
+\caption{Reference semantics}
+    \label{fig:reference-semantics}
+\end{figure}

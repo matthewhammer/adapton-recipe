@@ -278,6 +278,10 @@ appendix gives draft sections that are in progress.
 
 \begin{itemize}
 
+\item \Cref{sec:collecting-semantics} presents a collecting semantics for the reference semantics.
+
+\item \Cref{sec:abstract-semantics} presents a decidable, finite abstraction of the collecting semantics.
+
 \item \Cref{sec:from-scratch-consistency} presents a meta theory
   about the pair of theories, for reference and graphical dynamics.
   %
@@ -643,6 +647,43 @@ as the thunk-naming symbol to name this subspace:
 \section{Reference Dynamics}
 \label{sec:reference-dynamics}
 
+In this section, we define a \emph{reference semantics} for the \emph{store behavior} of the Adapton Recipe.
+%
+In contrast with the graphical semantics (\Cref{sec:graphical-dynamics}),
+this view deliberately omits the demanded computation graph (DCG).
+%
+Instead, it defines how a program uses first-class symbols to
+globally name space and time for stored data and thunks.
+
+As we argue in later sections,
+to reason about the store behavior of programs using the Adapton Recipe,
+it suffices to reason about this semantics alone (formally stated in \Cref{sec:from-scratch-consistency}).
+%
+We leverage this fact to define a collecting semantics and abstract semantics 
+based on this reference semantics, and notably,
+independently 
+of the graphical semantics (\Cref{sec:collecting-semantics,sec:abstract-semantics}).
+
+
+The judgement that defines the reference semantics can be implemented by an interpreter with five inputs, and two outputs (other than dynamic errors, due to violating the abstract semantics):
+
+\begin{itemize}
+\item \textbf{Inputs:}
+  store~$[[Store1]]$,
+  path~$[[Path]]$,
+  space~$[[Space]]$,
+  and
+  moment~$[[Moment]]$
+  and expression~$[[e]]$
+\item \textbf{Outputs:}
+  store~$[[Store2]]$ and value~$[[v]]$
+\end{itemize}
+
+We define paths as a list of thunk pointers:
+
+
+We define the reference semantics as a seven place relation as follows:
+
 \[
 \begin{array}{lc}
 \scalebox{1.5}{\boxed{
@@ -663,6 +704,9 @@ as the thunk-naming symbol to name this subspace:
 \end{array}
 \]
 
+The relation uses nineteen rules, which we discuss in groups below.
+%
+The entire set of rules is given again in \Cref{fig:reference-semantics}.
 
 \subsection{Pure thunks.}
 
@@ -1213,6 +1257,9 @@ not in every case where the reference semantics falls back to a
 
 \begin{appendices}
 
+\input{sec-collecting-semantics-out}
+
+\input{sec-abstract-semantics-out}
 
 \section{From-scratch Consistency}
 \label{sec:from-scratch-consistency}

@@ -1,5 +1,6 @@
 *.ott-out
 *.out
+*-out.tex
 out.*
 *.out.*
 overview.tex

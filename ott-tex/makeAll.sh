@@ -25,11 +25,25 @@ ott \
     -i $FORMALISM \
     -o formalism-commands.tex > formalism-commands.ott-out
 
+
 ott \
     -tex_wrap true \
     -i $FORMALISM \
-    -tex_filter adapton-recipe.tex adapton-recipe.out.tex > overview.ott-out
+    -tex_filter fig-reference-semantics.tex fig-reference-semantics-out.tex
 
-# pdflatex formalism.tex || echo Expect manual intervention here, sometimes.
+ott \
+    -tex_wrap true \
+    -i $FORMALISM \
+    -tex_filter sec-collecting-semantics.tex sec-collecting-semantics-out.tex
+    
+ott \
+    -tex_wrap true \
+    -i $FORMALISM \
+    -tex_filter sec-abstract-semantics.tex sec-abstract-semantics-out.tex
+
+ott \
+    -tex_wrap true \
+    -i $FORMALISM \
+    -tex_filter adapton-recipe.tex adapton-recipe.out.tex
 
 pdflatex adapton-recipe.out.tex

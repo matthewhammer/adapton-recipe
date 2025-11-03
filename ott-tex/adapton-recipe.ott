@@ -53,6 +53,9 @@ terminals :: 'terminals_' ::=
 % | #empty :: :: empty {{ tex \epsilon }}
 
 formula :: 'formula_' ::=
+ | formula \\\\ :: :: lbh {{ tex [[formula]] \ottlinebreakhack }}
+ | ( formula1 ~~~~ formula2 ) :: :: stack2 {{ tex \genfrac{}{}{0pt}{}{[[formula1]]}{[[formula2]]} }} 
+ | ( formula1 ~~~~ formula2 ~~~~ formula3 ) :: :: stack3 {{ tex \genfrac{}{}{0pt}{}{[[formula1]]}{ \displaystyle \genfrac{}{}{0pt}{}{[[formula2]]}{[[formula3]]} } }} 
  | judgement :: :: judgement
  | Store ( pp ) =  cell :: :: storeGetCell
  | Graph ( pp ) =  node :: :: graphGetNode
@@ -64,7 +67,7 @@ formula :: 'formula_' ::=
  | v1 = v2 :: :: equal
  | v1 /= v2 :: :: notEqualValue
  | e1 /= e2 :: :: notEqualExpression
- | d1 = d2 :: :: dimensionEqual
+ | d1 = d2 :: :: dimensionEqualfor
  | m1 = m2 :: :: metaMomentEqual
  | StoreValueOption1 /= StoreValueOption2 :: :: notEqualValueStoreOption
  | Space1 /= Space2 :: :: notEqualSpace
@@ -265,40 +268,40 @@ Store1 ; Path ; Moment ; Space |- force((e1)) !! Store3 ; v
 ------------------------------------------------------- :: sym
 Store ; Path ; Moment ; Space |- sym s !! Store ; sym s
 
-Store ; Path ; Moment ; Space |- e1 !! Store ; sym s1
+Store ; Path ; Moment ; Space |- e1 !! Store ; sym s1 \\\\
 Store ; Path ; Moment ; Space |- e2 !! Store ; sym s2
 --------------------------------------------------------------- :: symMinus
 Store ; Path ; Moment ; Space |- e1 - e2 !! Store ; sym s1-s2
 
-Store ; Path ; Moment ; Space |- e1 !! Store ; sym s1
+Store ; Path ; Moment ; Space |- e1 !! Store ; sym s1 \\\\
 Store ; Path ; Moment ; Space |- e2 !! Store ; sym s2
 --------------------------------------------------------------- :: symDot
 Store ; Path ; Moment ; Space |- e1 . e2 !! Store ; sym s1.s2
 
-Store ; Path ; Moment ; Space |- e1 !! Store ; sym s1
+Store ; Path ; Moment ; Space |- e1 !! Store ; sym s1 \\\\
 Store ; Path ; Moment ; Space |- e2 !! Store ; sym s2
 --------------------------------------------------------------- :: symApp
 Store ; Path ; Moment ; Space |- e1((e2)) !! Store ; sym s1(s2)
 
 
-Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
+Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s \\\\
 Store2 ; Path ; Moment ; subSpace(Space, s) |- e2 !! Store3 ; v
 --------------------------------------------------------------------------- :: withinSpace
 Store1 ; Path ; Moment ; Space |- do within space((e1))({(e2)}) !! Store3 ; v
 
-Store1 ; Path ; Moment ; Space1 |- e1 !! Store2 ; sp Space2
+Store1 ; Path ; Moment ; Space1 |- e1 !! Store2 ; sp Space2 \\\\
 Store2 ; Path ; Moment ; Space2 |- e2 !! Store3 ; v
 --------------------------------------------------------------------------- :: gotoSpace
 Store1 ; Path ; Moment ; Space1 |- do goto space((e1))({(e2)}) !! Store3 ; v
 
-Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
-Store2 |- undelay(Store2, subMoment(Moment, s)) !! Store3
+Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s \\\\ 
+Store2 |- undelay(Store2, subMoment(Moment, s)) !! Store3 \\\\
 Store3 ; Path ; subMoment(Moment, s) ; Space |- e2 !! Store4 ; v
 --------------------------------------------------------------------------- :: withinMoment
 Store1 ; Path ; Moment ; Space |- do within moment((e1))({(e2)}) !! Store4 ; v
 
-Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; mt Moment2
-Store2 |- undelay(Store2, Moment2) !! Store3
+Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; mt Moment2 \\\\
+Store2 |- undelay(Store2, Moment2) !! Store3 \\\\
 Store3 ; Path ; Moment2 ; Space |- e2 !! Store4 ; v
 --------------------------------------------------------------------------- :: gotoMoment
 Store1 ; Path ; Moment ; Space |- do goto moment((e1))({(e2)}) !! Store4 ; v
@@ -307,17 +310,15 @@ Store1 ; Path ; Moment ; Space |- do goto moment((e1))({(e2)}) !! Store4 ; v
 Store1 ; Path ; Moment ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment ; Space |- e2 !! Store3 ; v
 (subSpace(Space, s), Moment)^st \notin Path
-Store3{ (subSpace(Space, s), Moment)^st |->(Space, v) } = Store4
----------------------------------------------------------------------------------------------------------------- :: putImmediate
-Store1 ; Path ; Moment ; Space |- put ((e1, e2)) !! Store4 ; ptr subSpace(Space,s)
+-------------------------------------------------------------------------------------------------------------------- :: putImmediate
+Store1 ; Path ; Moment ; Space |- put ((e1, e2)) !! Store3{ (subSpace(Space, s), Moment)^st |->(Space, v) } ; ptr subSpace(Space,s)
 
 
 Store1 ; Path ; Moment1 ; Space |- e1 !! Store2 ; sym s
 Store2 ; Path ; Moment1 ; Space |- e2 !! Store3 ; v
 Store3 ; Path ; Moment1 ; Space |- e3 !! Store4 ; mt Moment2
-Store4{ (subSpace(Space, s), Moment2)^ts |->(Space, v) } = Store5
 --------------------------------------------------------------------------------------------------------------- :: putDelay
-Store ; Path ; Moment1 ; Space |- put ((e1, e2, e3)) !! Store5 ; ptr subSpace(Space,s)
+Store ; Path ; Moment1 ; Space |- put ((e1, e2, e3)) !! Store4{ (subSpace(Space, s), Moment2)^ts |->(Space, v) } ; ptr subSpace(Space,s)
 
 
 Store1 ; Path ; Moment ; Space1 |- e !! Store2 ; ptr Space2

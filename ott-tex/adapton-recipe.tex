@@ -8,7 +8,7 @@
 \usepackage{makecell}
 \usepackage{charter}
 \usepackage{xcolor}
-\usepackage[alternateNonterms]{ottalt}
+\usepackage[alternateNonterms,lineBreakHack]{ottalt}
 \usepackage{amsmath,amsthm}
 \usepackage{geometry}
 \usepackage{graphicx}
@@ -945,11 +945,11 @@ Put operations write to the global store.
 There are two temporal cases: immediate in space-time, or delayed in time-space:
 
 \[
-\begin{array}{cc}
 \drule{EXXputImmediate}
-&
+\]
+
+\[
 \drule{EXXputDelay}
-\end{array}
 \]
 
 \noindent

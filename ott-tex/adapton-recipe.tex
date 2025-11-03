@@ -12,6 +12,7 @@
 \usepackage{amsmath,amsthm}
 \usepackage{geometry}
 \usepackage{graphicx}
+\usepackage{appendix}
 
 \usepackage{listings}
 \usepackage[edges]{forest}
@@ -248,11 +249,6 @@ This document is organized as follows:
 
 \begin{itemize}
 
-\item \Cref{sec:collections} introduces the recipe's approach to
-  programming with collection-based data structures like sequences,
-  sets and finite maps.  The concepts introduced here are used in
-  subsequent section's program examples.
-
 \item \Cref{sec:symbolic-space-and-time} introduces the idea of
   symbols and their possible program syntax.  We introduce the idea of
   the ``symbolic store'' used by the reference semantics.  The
@@ -275,6 +271,13 @@ This document is organized as follows:
 
 \item \Cref{sec:graphical-dynamics} presents the graphical dynamics.
 
+\end{itemize}
+
+The %first 
+appendix gives draft sections that are in progress.
+
+\begin{itemize}
+
 \item \Cref{sec:from-scratch-consistency} presents a meta theory
   about the pair of theories, for reference and graphical dynamics.
   %
@@ -284,274 +287,23 @@ This document is organized as follows:
   the graphical semantics is always ``from-scratch consistent'' with
   full re-evaluation.
 
-\item Note to (draft) reader: There is a pending implementation.  Once more
-  complete, sections about that would include a description of it, and
+\item \Cref{sec:collections} introduces the recipe's approach to
+  programming with collection-based data structures like sequences,
+  sets and finite maps.  The concepts introduced here are used in
+  subsequent section's program examples.
+
+\item There is a pending implementation.  Once more
+  complete, we will include a description of it, and
   an experimental evaluation with practical time and space
   measurements.
 
 \end{itemize}
 
-\section{Incremental Collections}
-\label{sec:collections}
-
-The recipe uses \textbf{binary trees} of a certain flavor to represent
-each each collection type, such as set, partial map, or sequence.
 %
-Other tree arities are possible too, using more general definitions
-and algorithms, but in this recipe, we focus on binary trees for
-simplicity.
+% The second appendix gives complete supplementary material.
 %
-
-\begin{definition}[Tree representation]
-  Given a set of mathematical structures~$\mathcal{S}$ with a common
-  collection type~$\tau$ we say that
-  representation function $\ottkw{tree} : \tau \rightarrow \texttt{Tree<X,Y>}$ is a
-  \emph{(binary) tree representation} if:
-  \begin{itemize}
-  \item The output of $\ottkw{tree}$ has a representation that is isomorphic to the
-    following recursive sum type:
-    \[
-    \texttt{Tree<X,Y>} \equiv \texttt{\{\#empty; \#elment(X); \#binary(Tree, Y, Tree)\}}
-    \]
-  \item Where type \texttt{X} carries the data associated with the elements of each structure~$S : \tau \in \mathcal{S}$.
-    
-  \item And where, by contrast, \texttt{Y}
-    carries any \emph{meta data} needed to \emph{locate} the elements of type \texttt{X},
-    but \emph{not} those elements themselves.
-
-  \item In other words, $\ottkw{tree}$ gives a representation that can
-    be traversed like a binary tree, with element data at the leaves
-    and navigation data at the binary nodes.
-    
-  \end{itemize}
-\end{definition}
-
-\subsection{Harmonious binary trees}
-
-A binary tree representation may not be well-adapted for the Adapton Recipe if it
-lacks certain properties related to how it adapts to change, and
-how it integrates with other data structures around it during changes.
+% to do
 %
-We build the recipe's approach to collections based on the concept of \emph{harmonious trees},
-a term of art that we introduce for the first time here, based on
-intuitions and related definitions developed in prior work.
-
-These trees systematically promote well-behaved, efficient incremental
-behavior by eliminating certain degenerate cases that would otherwise
-arise naturally, especially in code that iterates over data, in
-sequence, to process it.
-%
-Beyond trivial examples without loops, this pattern (``iterates over
-data'') applies to nearly all programs we'd like to incrementalize, so
-harmonious trees are relevant behind the scenes in most situations.
-
-\begin{definition}[Harmonious tree representation]
-  \label{def:harmonious}
-  A binary tree representation~$\ottkw{tree}$ is \emph{harmonious} if
-  it enjoys two properties:
-\begin{itemize}
-
-\item \textbf{balance}: For each structure $S \in \mathcal{S}$, the
-  corresponding tree $T = \ottkw{tree}(S)$ consists of \emph{balanced
-  binary nodes}: each binary node has left and right subtrees are
-  within some constant factor of each other, specific to the function~\ottkw{tree}.
-
-\item \textbf{change stable}: similar mathematical structures $S_1,
-  S_2 \in \mathcal{S}$ correspond to similar binary trees $T_1 =
-  \ottkw{tree}(S_1)$ and $T_2 = \ottkw{tree}(S_2)$, with many
-  identical subtree structures.  That is, if $S_1$ and $S_2$ are
-  related by small change, then $T_1$ and $T_2$ should also be
-  relatable with a small change.
-
-\end{itemize}
-
-\end{definition}
-
-The rest of the recipe's approach to collection-based algorithms
-relies on this property for each binary tree, regardless of
-whether it's representing a sequence, a set or a finite map.
-%
-In the remainder of this section, we focus on sequences and their
-representations as binary trees.
-
-\subsection{Incremental sequences}
-
-Mathematically, a sequence is a monoid.
-%
-We use this relationship to monoids as an approach to representing sequences,
-as is common functional programming.
-%
-These instances consist of immutable sequences, like in functional programming,
-but also sequences that can change in various ways, as necessary.
-
-In data structure terms, a \emph{monoid} is an inductive (tree-shaped)
-structure that represents a sequence of data elements with an associative ``append'' operation.
-%
-It has three forms:
-
-\begin{itemize}
-
-\item The \textbf{singleton data} form carries a value of some data type that is common to the entire monoid (e.g., ``integer'', ``database record'', etc.); these elements carry the relevant ``data'' of the monoid structure.
-
-\item A special \textbf{empty element}, (e.g., $0$) which ``cancels'' the append operation mathematically, meaning that $0 + R = R$ and $L + 0 = L$ holds for all instances $L$ and $R$.
-
-\item The \textbf{append node} that appends two existing instances, $L + R$; the placement of this form reflects the various choices of how to combine/divide within the mathematical monoid structure, since $A + (B + C) \equiv (A + B) + C$, for all choices of $A, B$ and $C$: Recall that monoids are \emph{associative}, meaning that the order of elements cannot be changed without changing the monoid (sequence) being represented, but by contrast, the placement of append nodes can be altered freely by the mathematical identity usually called ``associativity'' (stated above as $A + (B + C) \equiv (A + B) + C$), without affecting the sequence being represented.
-
-\end{itemize}
-
-These forms permit a program to ``generate'' harmonious monoid structures for
-a relevant sequence of elements, in preparation for doing something
-else with that sequence that involves each element, such as
-determining the max element, the min element, the median element, or
-even sorting it upon demand into a new, output sequence.
-
-By using harmonious structures for sequences in our programs, the Adapton Recipe will provide an efficient
-incremental change propagation algorithm, behind the scenes.
-%
-In the remainder of this section, we work towards that final example
-(demand-driven sorted output sequence), building the needed program components
-in stages, including the generation and reduction of monoids (sequences) that are harmonious.
-
-\subsection{Monoid generation}
-
-Given a sequence of elements, there are many possible ways to generate a monoid.
-%
-For instance, a linked list is a kind of monoid structure, but it
-doesn't meet either condition that we require for harmonious binary trees (\cref{def:harmonious}), as its
-only a pathological kind of binary tree (totally imbalanced, and thus
-not change stable either).
-
-There are many algorithms that could generally produce acceptable
-binary trees, but the recipe embraces one that uses psuedo-random
-decisions based on the relative position of each element in the input
-sequence.  As we show through experimentation (and argue by reference
-to earlier work that established a similar approach), the recipe's
-\texttt{Seq} trees provide both balance and change stability, as
-required.
-
-\newcommand{\CaptionToggle}[1]{} % off
-
-\begin{figure}
-  \begin{tabular}[t]{|p{0.382\textwidth}|p{0.618\textwidth}|}
-  \hline
-  \begin{minipage}[t]{0.382\textwidth}
-  \vspace{0pt} % <-- Required for top alignment inside minipage
-  \lstinputlisting[language=Fumola, style=Fumola,\CaptionToggle{\texttt{SeqTree} type.}, captionpos=b, label={lst:SeqTree}]{../examples/SeqTree.SeqTree.fumola-type-listing}
-  \lstinputlisting[language=Fumola, style=Fumola]{../examples/SeqTree.Element.fumola-type-listing}
-  \lstinputlisting[language=Fumola, style=Fumola]{../examples/SeqTree.Binary.fumola-type-listing}
-  \lstinputlisting[language=Fumola, style=Fumola,\CaptionToggle{\texttt{Element}, \texttt{Binary} and \texttt{SeqTree\_} types.}, captionpos=b, label={lst:SeqTree_}]{../examples/SeqTree.SeqTree_.fumola-type-listing}
-  \end{minipage}
-  &
-  \begin{minipage}[t]{0.618\textwidth}
-  \lstinputlisting[language=Fumola, style=Fumola,\CaptionToggle{\texttt{reduceUp}, a function over \texttt{SeqTree}.}, captionpos=b, label={lst:SeqTree-reduceUp}]{../examples/SeqTree.reduceUp.fumola-func-listing}
-  \end{minipage}
-  \\
-  \hline
-\end{tabular}
-\end{figure}
-
-\forestset{
-  declare styles={
-    internal/.style={
-      draw,
-      rectangle,
-      thick,
-      fill=gray!20,
-    },
-    leaf/.style={
-      draw,
-      rounded corners,
-      dashed,
-      fill=blue!15,
-    }
-  }
-}
-
-
-\forestset{
-  SeqTree/.style={
-    for tree={
-      draw,
-    }
-  }
-}
-
-\begin{figure}
-  \begin{center}
-  \input{mergeSort-inputSeq}
-  % todo -- input an image of the original sequence, as a linked list
-  \end{center}
-  \caption{\texttt{mergeSort} input sequence, as a harmonious tree.}
-\end{figure}
-
-\subsection{Monoid reduction}
-
-\begin{tikzpicture}[scale=2.0, every node/.style={draw, scale=0.6},
-  root/.style={xshift=2cm},
-  layerA/.style={yslant=-0.5, xslant=0.5, xshift=-1cm},
-  layerB/.style={yslant=-0.5, xslant=0.5, yshift=-1cm},
-  pointer/.style={->, thick, >=Stealth, dotted},
-  connection/.style={->, thick, color=blue!50!black, opacity=0.7},
-  thunk/.style={circle, draw, fill=white!80!gray},
-  edge/.style={->, thick, >=Stealth, blue!50!black},
-  edgeNum/.style={near start, above, draw=none},
-  fieldLabel/.style={near start, above, draw=none, fill=white},
-]
-
-  \begin{scope}[root]
-    \node[scale=2.0, cloud] (here-now) at (0,0) {\texttt{here/now}};
-  \end{scope}
-
-% Layer A: Tree A
-  \begin{scope}[layerA]
-  \node (A1) at (0,0) {A1};
-  \node (A2) at (-1,-1.5) {A2};
-  \node (A3) at (1,-1.5) {A3};
-  \node (A4) at (-1.5,-3) {A4};
-  \node (A5) at (-0.5,-3) {A5};
-  \node (A6) at (0.5,-3) {A6};
-  \node (A7) at (1.5,-3) {A7};
-
-  \draw[pointer] (A1) -- (A2) node[fieldLabel]{left};
-  \draw[pointer] (A2) -- (A4) node[fieldLabel]{left};
-  \draw[pointer] (A2) -- (A5) node[fieldLabel]{right};
-  \draw[pointer] (A1) -- (A3) node[fieldLabel]{right} -- (A6) node[fieldLabel]{left};
-  \draw[pointer] (A3) -- (A7) node[fieldLabel]{right};
-\end{scope}
-
-% Layer B: Tree B
-  \begin{scope}[layerB]
-  \node[thunk] (B1) at (0,0) {B1};
-  \node[thunk] (B2) at (-1,-1.5) {B2};
-  \node[thunk] (B3) at (1,-1.5) {B3};
-  \node[thunk] (B4) at (-1.5,-3) {B4};
-  \node[thunk] (B5) at (-0.5,-3) {B5};
-  \node[thunk] (B6) at (0.5,-3) {B6};
-  \node[thunk] (B7) at (1.5,-3) {B7};
-
-  \draw[edge] (B1) -- (B2) node[edgeNum] {2};
-  \draw[edge] (B2) -- (B4) node[edgeNum] {2};
-  \draw[edge] (B2) -- (B5) node[edgeNum,right] {3};
-  \draw[edge] (B1) -- (B3) node[edgeNum,right] {3};
-  \draw[edge] (B3) -- (B6) node[edgeNum] {2};
-  \draw[edge] (B3) -- (B7) node[edgeNum,right] {3};
-\end{scope}
-
-% Connections between layers
-\draw[connection] (B1) .. controls +(up:0.5cm) and +(right:0.5cm) .. (A1) node[edgeNum,right] {1};
-\draw[connection] (B2) .. controls +(up:0.5cm) and +(right:0.5cm) .. (A2) node[edgeNum,right] {1};
-\draw[connection] (B3) -- (A3) node[edgeNum,left] {1};
-
-\draw[connection] (B4) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A4) node[edgeNum] {1};
-\draw[connection] (B5) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A5) node[edgeNum] {1};
-\draw[connection] (B6) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A6) node[edgeNum] {1};
-\draw[connection] (B7) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A7) node[edgeNum] {1};
-
-
-% edges
-\draw[edge] (here-now) .. controls +(left:1cm) and +(up:1cm) .. (A1) node[edgeNum] {1};
-\draw[edge] (here-now) -- (B1) node[edgeNum] {2};
-\end{tikzpicture}
 
 
 \section{Symbolic Space and Time}
@@ -1455,6 +1207,13 @@ not in every case where the reference semantics falls back to a
 
 (Compared to reference dynamics, very similar, but uses dirtying.)
 
+% =============================================================================================================================
+% =============================================================================================================================
+\newpage
+
+\begin{appendices}
+
+
 \section{From-scratch Consistency}
 \label{sec:from-scratch-consistency}
 
@@ -1485,8 +1244,280 @@ Both of the following hold:
   \end{array}$
 \end{itemize}
 
+% ====================================================================================================================
+
+\section{Incremental Collections}
+\label{sec:collections}
+
+The recipe uses \textbf{binary trees} of a certain flavor to represent
+each each collection type, such as set, partial map, or sequence.
+%
+Other tree arities are possible too, using more general definitions
+and algorithms, but in this recipe, we focus on binary trees for
+simplicity.
+%
+
+\begin{definition}[Tree representation]
+  Given a set of mathematical structures~$\mathcal{S}$ with a common
+  collection type~$\tau$ we say that
+  representation function $\ottkw{tree} : \tau \rightarrow \texttt{Tree<X,Y>}$ is a
+  \emph{(binary) tree representation} if:
+  \begin{itemize}
+  \item The output of $\ottkw{tree}$ has a representation that is isomorphic to the
+    following recursive sum type:
+    \[
+    \texttt{Tree<X,Y>} \equiv \texttt{\{\#empty; \#elment(X); \#binary(Tree, Y, Tree)\}}
+    \]
+  \item Where type \texttt{X} carries the data associated with the elements of each structure~$S : \tau \in \mathcal{S}$.
+    
+  \item And where, by contrast, \texttt{Y}
+    carries any \emph{meta data} needed to \emph{locate} the elements of type \texttt{X},
+    but \emph{not} those elements themselves.
+
+  \item In other words, $\ottkw{tree}$ gives a representation that can
+    be traversed like a binary tree, with element data at the leaves
+    and navigation data at the binary nodes.
+    
+  \end{itemize}
+\end{definition}
+
+\subsection{Harmonious binary trees}
+
+A binary tree representation may not be well-adapted for the Adapton Recipe if it
+lacks certain properties related to how it adapts to change, and
+how it integrates with other data structures around it during changes.
+%
+We build the recipe's approach to collections based on the concept of \emph{harmonious trees},
+a term of art that we introduce for the first time here, based on
+intuitions and related definitions developed in prior work.
+
+These trees systematically promote well-behaved, efficient incremental
+behavior by eliminating certain degenerate cases that would otherwise
+arise naturally, especially in code that iterates over data, in
+sequence, to process it.
+%
+Beyond trivial examples without loops, this pattern (``iterates over
+data'') applies to nearly all programs we'd like to incrementalize, so
+harmonious trees are relevant behind the scenes in most situations.
+
+\begin{definition}[Harmonious tree representation]
+  \label{def:harmonious}
+  A binary tree representation~$\ottkw{tree}$ is \emph{harmonious} if
+  it enjoys two properties:
+\begin{itemize}
+
+\item \textbf{balance}: For each structure $S \in \mathcal{S}$, the
+  corresponding tree $T = \ottkw{tree}(S)$ consists of \emph{balanced
+  binary nodes}: each binary node has left and right subtrees are
+  within some constant factor of each other, specific to the function~\ottkw{tree}.
+
+\item \textbf{change stable}: similar mathematical structures $S_1,
+  S_2 \in \mathcal{S}$ correspond to similar binary trees $T_1 =
+  \ottkw{tree}(S_1)$ and $T_2 = \ottkw{tree}(S_2)$, with many
+  identical subtree structures.  That is, if $S_1$ and $S_2$ are
+  related by small change, then $T_1$ and $T_2$ should also be
+  relatable with a small change.
+
+\end{itemize}
+
+\end{definition}
+
+The rest of the recipe's approach to collection-based algorithms
+relies on this property for each binary tree, regardless of
+whether it's representing a sequence, a set or a finite map.
+%
+In the remainder of this section, we focus on sequences and their
+representations as binary trees.
+
+\subsection{Incremental sequences}
+
+Mathematically, a sequence is a monoid.
+%
+We use this relationship to monoids as an approach to representing sequences,
+as is common functional programming.
+%
+These instances consist of immutable sequences, like in functional programming,
+but also sequences that can change in various ways, as necessary.
+
+In data structure terms, a \emph{monoid} is an inductive (tree-shaped)
+structure that represents a sequence of data elements with an associative ``append'' operation.
+%
+It has three forms:
+
+\begin{itemize}
+
+\item The \textbf{singleton data} form carries a value of some data type that is common to the entire monoid (e.g., ``integer'', ``database record'', etc.); these elements carry the relevant ``data'' of the monoid structure.
+
+\item A special \textbf{empty element}, (e.g., $0$) which ``cancels'' the append operation mathematically, meaning that $0 + R = R$ and $L + 0 = L$ holds for all instances $L$ and $R$.
+
+\item The \textbf{append node} that appends two existing instances, $L + R$; the placement of this form reflects the various choices of how to combine/divide within the mathematical monoid structure, since $A + (B + C) \equiv (A + B) + C$, for all choices of $A, B$ and $C$: Recall that monoids are \emph{associative}, meaning that the order of elements cannot be changed without changing the monoid (sequence) being represented, but by contrast, the placement of append nodes can be altered freely by the mathematical identity usually called ``associativity'' (stated above as $A + (B + C) \equiv (A + B) + C$), without affecting the sequence being represented.
+
+\end{itemize}
+
+These forms permit a program to ``generate'' harmonious monoid structures for
+a relevant sequence of elements, in preparation for doing something
+else with that sequence that involves each element, such as
+determining the max element, the min element, the median element, or
+even sorting it upon demand into a new, output sequence.
+
+By using harmonious structures for sequences in our programs, the Adapton Recipe will provide an efficient
+incremental change propagation algorithm, behind the scenes.
+%
+In the remainder of this section, we work towards that final example
+(demand-driven sorted output sequence), building the needed program components
+in stages, including the generation and reduction of monoids (sequences) that are harmonious.
+
+\subsection{Monoid generation}
+
+Given a sequence of elements, there are many possible ways to generate a monoid.
+%
+For instance, a linked list is a kind of monoid structure, but it
+doesn't meet either condition that we require for harmonious binary trees (\cref{def:harmonious}), as its
+only a pathological kind of binary tree (totally imbalanced, and thus
+not change stable either).
+
+There are many algorithms that could generally produce acceptable
+binary trees, but the recipe embraces one that uses psuedo-random
+decisions based on the relative position of each element in the input
+sequence.  As we show through experimentation (and argue by reference
+to earlier work that established a similar approach), the recipe's
+\texttt{Seq} trees provide both balance and change stability, as
+required.
+
+\newcommand{\CaptionToggle}[1]{} % off
+
+\begin{figure}
+  \begin{tabular}[t]{|p{0.382\textwidth}|p{0.618\textwidth}|}
+  \hline
+  \begin{minipage}[t]{0.382\textwidth}
+  \vspace{0pt} % <-- Required for top alignment inside minipage
+  \lstinputlisting[language=Fumola, style=Fumola,\CaptionToggle{\texttt{SeqTree} type.}, captionpos=b, label={lst:SeqTree}]{../examples/SeqTree.SeqTree.fumola-type-listing}
+  \lstinputlisting[language=Fumola, style=Fumola]{../examples/SeqTree.Element.fumola-type-listing}
+  \lstinputlisting[language=Fumola, style=Fumola]{../examples/SeqTree.Binary.fumola-type-listing}
+  \lstinputlisting[language=Fumola, style=Fumola,\CaptionToggle{\texttt{Element}, \texttt{Binary} and \texttt{SeqTree\_} types.}, captionpos=b, label={lst:SeqTree_}]{../examples/SeqTree.SeqTree_.fumola-type-listing}
+  \end{minipage}
+  &
+  \begin{minipage}[t]{0.618\textwidth}
+  \lstinputlisting[language=Fumola, style=Fumola,\CaptionToggle{\texttt{reduceUp}, a function over \texttt{SeqTree}.}, captionpos=b, label={lst:SeqTree-reduceUp}]{../examples/SeqTree.reduceUp.fumola-func-listing}
+  \end{minipage}
+  \\
+  \hline
+\end{tabular}
+\end{figure}
+
+\forestset{
+  declare styles={
+    internal/.style={
+      draw,
+      rectangle,
+      thick,
+      fill=gray!20,
+    },
+    leaf/.style={
+      draw,
+      rounded corners,
+      dashed,
+      fill=blue!15,
+    }
+  }
+}
 
 
+\forestset{
+  SeqTree/.style={
+    for tree={
+      draw,
+    }
+  }
+}
+
+\begin{figure}
+  \begin{center}
+  \input{mergeSort-inputSeq}
+  % todo -- input an image of the original sequence, as a linked list
+  \end{center}
+  \caption{\texttt{mergeSort} input sequence, as a harmonious tree.}
+\end{figure}
+
+\subsection{Monoid reduction}
+
+\begin{tikzpicture}[scale=2.0, every node/.style={draw, scale=0.6},
+  root/.style={xshift=2cm},
+  layerA/.style={yslant=-0.5, xslant=0.5, xshift=-1cm},
+  layerB/.style={yslant=-0.5, xslant=0.5, yshift=-1cm},
+  pointer/.style={->, thick, >=Stealth, dotted},
+  connection/.style={->, thick, color=blue!50!black, opacity=0.7},
+  thunk/.style={circle, draw, fill=white!80!gray},
+  edge/.style={->, thick, >=Stealth, blue!50!black},
+  edgeNum/.style={near start, above, draw=none},
+  fieldLabel/.style={near start, above, draw=none, fill=white},
+]
+
+  \begin{scope}[root]
+    \node[scale=2.0, cloud] (here-now) at (0,0) {\texttt{here/now}};
+  \end{scope}
+
+% Layer A: Tree A
+  \begin{scope}[layerA]
+  \node (A1) at (0,0) {A1};
+  \node (A2) at (-1,-1.5) {A2};
+  \node (A3) at (1,-1.5) {A3};
+  \node (A4) at (-1.5,-3) {A4};
+  \node (A5) at (-0.5,-3) {A5};
+  \node (A6) at (0.5,-3) {A6};
+  \node (A7) at (1.5,-3) {A7};
+
+  \draw[pointer] (A1) -- (A2) node[fieldLabel]{left};
+  \draw[pointer] (A2) -- (A4) node[fieldLabel]{left};
+  \draw[pointer] (A2) -- (A5) node[fieldLabel]{right};
+  \draw[pointer] (A1) -- (A3) node[fieldLabel]{right} -- (A6) node[fieldLabel]{left};
+  \draw[pointer] (A3) -- (A7) node[fieldLabel]{right};
+\end{scope}
+
+% Layer B: Tree B
+  \begin{scope}[layerB]
+  \node[thunk] (B1) at (0,0) {B1};
+  \node[thunk] (B2) at (-1,-1.5) {B2};
+  \node[thunk] (B3) at (1,-1.5) {B3};
+  \node[thunk] (B4) at (-1.5,-3) {B4};
+  \node[thunk] (B5) at (-0.5,-3) {B5};
+  \node[thunk] (B6) at (0.5,-3) {B6};
+  \node[thunk] (B7) at (1.5,-3) {B7};
+
+  \draw[edge] (B1) -- (B2) node[edgeNum] {2};
+  \draw[edge] (B2) -- (B4) node[edgeNum] {2};
+  \draw[edge] (B2) -- (B5) node[edgeNum,right] {3};
+  \draw[edge] (B1) -- (B3) node[edgeNum,right] {3};
+  \draw[edge] (B3) -- (B6) node[edgeNum] {2};
+  \draw[edge] (B3) -- (B7) node[edgeNum,right] {3};
+\end{scope}
+
+% Connections between layers
+\draw[connection] (B1) .. controls +(up:0.5cm) and +(right:0.5cm) .. (A1) node[edgeNum,right] {1};
+\draw[connection] (B2) .. controls +(up:0.5cm) and +(right:0.5cm) .. (A2) node[edgeNum,right] {1};
+\draw[connection] (B3) -- (A3) node[edgeNum,left] {1};
+
+\draw[connection] (B4) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A4) node[edgeNum] {1};
+\draw[connection] (B5) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A5) node[edgeNum] {1};
+\draw[connection] (B6) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A6) node[edgeNum] {1};
+\draw[connection] (B7) .. controls +(up:0.5cm) and +(down:0.5cm) .. (A7) node[edgeNum] {1};
+
+
+% edges
+\draw[edge] (here-now) .. controls +(left:1cm) and +(up:1cm) .. (A1) node[edgeNum] {1};
+\draw[edge] (here-now) -- (B1) node[edgeNum] {2};
+\end{tikzpicture}
+
+\end{appendices}
+
+\end{document}
+
+% ==========================================================================================================================================
+%
+%
+%
+%
+% ==========================================================================================================================================
 
 \newpage
 
@@ -1524,9 +1555,6 @@ Both of the following hold:
 
 \newpage
 
-
-\end{document}
-
 % ------------------------------------------------------------------
 
 \paragraph{The ambient path function.}
@@ -1562,6 +1590,9 @@ library API, making it less concise and readable.
 By including them, we make programs and libraries more concise and
 uniform in their calling conventions.
 }.
+
+
+
 
 
 % ------------------------------------------------------------------

@@ -664,8 +664,8 @@ based on this reference semantics, and notably,
 independently 
 of the graphical semantics (\Cref{sec:collecting-semantics,sec:abstract-semantics}).
 
-
-The judgement that defines the reference semantics can be implemented by an interpreter with five inputs, and two outputs (other than dynamic errors, due to violating the abstract semantics):
+The reference semantics can be implemented by an interpreter with five inputs, and two outputs
+(for now, ignoring dynamic errors that arise from violating the abstract semantics):
 
 \begin{itemize}
 \item \textbf{Inputs:}
@@ -681,6 +681,9 @@ The judgement that defines the reference semantics can be implemented by an inte
 
 We define paths as a list of thunk pointers:
 
+\ottgrammartabular{
+  \ottPath
+}
 
 We define the reference semantics as a seven place relation as follows:
 

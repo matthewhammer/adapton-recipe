@@ -53,9 +53,11 @@ terminals :: 'terminals_' ::=
 % | #empty :: :: empty {{ tex \epsilon }}
 
 formula :: 'formula_' ::=
+ | :: :: empty {{ tex { } }}
  | formula \\\\ :: :: lbh {{ tex [[formula]] \ottlinebreakhack }}
- | ( formula1 ~~~~ formula2 ) :: :: stack2 {{ tex \genfrac{}{}{0pt}{}{[[formula1]]}{[[formula2]]} }} 
- | ( formula1 ~~~~ formula2 ~~~~ formula3 ) :: :: stack3 {{ tex \genfrac{}{}{0pt}{}{[[formula1]]}{ \displaystyle \genfrac{}{}{0pt}{}{[[formula2]]}{[[formula3]]} } }} 
+ | ( formula1 ~~ formula2 ) :: :: hbox {{ tex [[formula1]]~~~~[[formula2]] }} 
+ | ( formula1 ~~~~ formula2 ) :: :: vbox2 {{ tex \genfrac{}{}{0pt}{}{[[formula1]]}{[[formula2]]} }} 
+ | ( formula1 ~~~~ formula2 ~~~~ formula3 ) :: :: vbox3 {{ tex \genfrac{}{}{0pt}{}{[[formula1]]}{ \displaystyle \genfrac{}{}{0pt}{}{[[formula2]]}{[[formula3]]} } }} 
  | judgement :: :: judgement
  | Store ( pp ) =  cell :: :: storeGetCell
  | Graph ( pp ) =  node :: :: graphGetNode
@@ -180,9 +182,12 @@ CxtDim :: 'ContextDim_' ::= {{ com Context dimension. }}
 Path {{ tex \pi }} :: 'Path_' ::= {{ com Paths. }}
  | empty :: :: empty {{ tex \cdot }} {{ com Empty (no evaluating thunk pointers). }}
  | Path , pp :: :: pointer {{ com Thunk pointer~$[[pp]]$ evaluating at~$[[Path]]$. }}
- % xxx/to do -- separate into two grammars for Path, not one fused one:
- | Path , ppp :: :: precisePointer {{ com Thunk pointer~$[[ppp]]$ evaluating at~$[[Path]]$. }}
 
+% PrecisePath -- not needed in graphical semantics? 2025-11-04
+% --------------
+% PrecisePath {{ tex \dot{\pi} }} :: 'PrecisePath_' ::= {{ com Paths. }}
+% | empty :: :: empty {{ tex \cdot }} {{ com Empty (no evaluating thunk pointers). }}
+% | Path , ppp :: :: precisePointer {{ com Thunk pointer~$[[ppp]]$ evaluating at~$[[Path]]$. }}
 
 %----------------------------
 
@@ -438,19 +443,17 @@ Graph1 ; Path ; Moment ; m ; Space |- e !! Graph2 ; t ; v
 {{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} [[e]] \Downarrow [[Graph2]]; [[t]]; [[v]] }}
 by
 
-Graph1; Path; Moment; m; Space1 |- e !! Graph2; t; ptr Space2
-ppp = ((Space2, Moment)^st, m)
-Graph2(ppp) = Thunk(Space0, e0, empty)
-Graph2; Path, ppp; Moment; m; Space0 |- e0 !! Graph3; t3; v3
+(ppp = ((Space2, Moment)^st, m) ~~ Graph2(ppp) = Thunk(Space0, e0, empty)) \\\\
+Graph1; Path; Moment; m; Space1 |- e !! Graph2; t; ptr Space2 \\\\
+Graph2; Path, (Space2, Moment)^st; Moment; m; Space0 |- e0 !! Graph3; t3; v3 \\\\
 addEdge(Graph3{ ppp |-> Thunk(Space0, e0, (t3, v3)) }, top(Path)--force(v3)--clean--> (Space2, Moment)^st) = (Graph4, n)
 ------------------------------------------------------------------------------------------------------------- :: emptyForce
 Graph1; Path; Moment; m; Space1 |- force((e)) !! Graph4; t, n; v
 
-Graph1; Path; Moment; m; Space1 |- e !! Graph2; t; ptr Space2
-ppp = ((Space2, Moment)^st, m)
-Graph2(ppp) = Thunk(Space0, e0, (t0, v0))
-Graph2; Path; Moment; m; Space0 |- clean((Space2, Moment)^st) !! Graph3
-Graph3((Space2, Moment)^st) = Thunk(Space0, e0, (t3, v3))
+(ppp = ((Space2, Moment)^st, m) ~~ Graph2(ppp) = Thunk(Space0, e0, (t0, v0))) \\\\
+Graph1; Path; Moment; m; Space1 |- e !! Graph2; t; ptr Space2 \\\\
+Graph2; Path; Moment; m; Space0 |- clean((Space2, Moment)^st) !! Graph3 \\\\
+Graph3((Space2, Moment)^st) = Thunk(Space0, e0, (t3, v3)) \\\\
 addEdge(Graph3{ ppp |-> Thunk(Space0, e0, (t3, v3)) }, top(Path)--force(v3)--clean--> (Space2, Moment)^st) = (Graph4, n)
 --------------------------------------------------------------------------------- :: cleanForce
 Graph1; Path; Moment; m; Space1 |- force((e)) !! Graph4; t, n; v
@@ -468,10 +471,8 @@ Graph1 ; Path ; Moment ; m ; Space |- clean ( t0 ) !! Graph2 ; clean
 Graph1 ; Path ; Moment ; m ; Space |- clean ( pp ) !! Graph2
 
 
-Graph1(pp) = Thunk(Space0, e0, (t0, v0))
-Graph1 ; Path ; Moment ; m1 ; Space |- clean( t0 ) !! Graph2 ; dirty
-nextMetaMoment(Graph2) = m2
-Graph2{ (pp, m2) |-> Thunk(Space, e0, empty) } ; Path, pp; Moment ; m2 ; Space0 |- e0 !! Graph3; t3; v3
+( Graph1 ; Path ; Moment ; m1 ; Space |- clean( t0 ) !! Graph2 ; dirty ~~~~ Graph2{ (pp, m2) |-> Thunk(Space, e0, empty) } ; Path, pp; Moment ; m2 ; Space0 |- e0 !! Graph3; t3; v3 )
+( Graph1(pp) = Thunk(Space0, e0, (t0, v0)) ~~~~ nextMetaMoment(Graph2) = m2 )
 ---------------------------------------------------------------------------------------------------- :: misaligned
 Graph1 ; Path ; Moment ; m1 ; Space |- clean ( pp ) !! Graph3{ (pp, m2) |-> Thunk(Space0, e0, (t3, v3)) }
 
@@ -497,12 +498,10 @@ Graph(n) = ppp -- A -- clean --> qq
 --------------------------------------------------------------- :: alreadyClean
 Graph ; Path ; Moment ; m ; Space |- clean(n) !! Graph ; clean
 
-Graph1(n) = ppp -- A -- dirty --> qq
-Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2
-value(A) = value(Graph2, qq)
-Graph3 = Graph2{ n |-> ppp --A--clean--> qq }
------------------------------------------------------------------------- :: dirtyIntoClean
-Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph3 ; clean
+(Graph1(n) = ppp -- A -- dirty --> qq ~~~~ Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2)
+( ~~~~ value(A) = value(Graph2, qq))
+----------------------------------------------------------------------------------------------------- :: dirtyIntoClean
+Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph2{ n |-> ppp --A--clean--> qq } ; clean
 
 Graph1(n) = ppp -- A -- dirty --> qq
 Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2

@@ -454,7 +454,7 @@ Graph1; Path; Moment; m; Space1 |- force((e)) !! Graph4; t, n; v
 Graph1; Path; Moment; m; Space1 |- e !! Graph2; t; ptr Space2 \\\\
 Graph2; Path; Moment; m; Space0 |- clean((Space2, Moment)^st) !! Graph3 \\\\
 Graph3((Space2, Moment)^st) = Thunk(Space0, e0, (t3, v3)) \\\\
-addEdge(Graph3{ ppp |-> Thunk(Space0, e0, (t3, v3)) }, top(Path)--force(v3)--clean--> (Space2, Moment)^st) = (Graph4, n)
+addEdge(Graph3, top(Path)--force(v3)--clean--> (Space2, Moment)^st) = (Graph4, n)
 --------------------------------------------------------------------------------- :: cleanForce
 Graph1; Path; Moment; m; Space1 |- force((e)) !! Graph4; t, n; v
 

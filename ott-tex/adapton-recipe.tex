@@ -1041,8 +1041,8 @@ their happenstance natural numbers.
   \drule{DTXXempty}
   \drule{DTXXbinary}
   \drule{DTXXalreadyDirty}
-  \drule{DTXXcleanIntoDirty}
   \drule{DTXXstillClean}
+  \drule{DTXXcleanIntoDirty}
 \end{mathpar}
 
 There are five rules for dirtying a set of relevant edges, expressed as a sequence~$[[t]]$.
@@ -1060,6 +1060,16 @@ the graph's well-formedness to justify this behavior.
 The graph being wellformed guarentees that the edges that the traversal
 would encounter if it were to continue are already marked dirty.
 
+\rref{DT-stillClean} applies for an edge that is clean, and whose
+action~$[[A]]$ does not match the pattern~$[[DirtyActionPattern]]$;
+for instance, it's common for the put edge that targets (and defines)
+a thunk node to remain clean even as that node is affected by actions
+it performs, like accessing cells that change.
+%
+This independence of the $\ottkw{put}$ stems from the definition of the
+thunk being distinct from its behavior under any particular store or
+graph.
+
 \rref{DT-cleanIntoDirty} applies when the action of the edge~$[[A]]$
 matches the pattern of the traversal at this
 point~$[[DirtyActionPattern]]$.
@@ -1071,15 +1081,6 @@ may be affected too.
 This recursive premise helps enforce that the graph remains
 well-formed with respect to transitive $[[dirty]]$ vs $[[clean]]$ edge statuses.
 
-\rref{DT-stillClean} applies for an edge that is clean, and whose
-action~$[[A]]$ does not match the pattern~$[[DirtyActionPattern]]$;
-for instance, it's common for the put edge that targets (and defines)
-a thunk node to remain clean even as that node is affected by actions
-it performs, like accessing cells that change.
-%
-This independence of the $\ottkw{put}$ stems from the definition of the
-thunk being distinct from its behavior under any particular store or
-graph.
 
 \subsection{Cleaning.}
 

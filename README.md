@@ -7,4 +7,4 @@ A self-contained explaination of Adapton, in a single approachable paper.
 - [Ott](https://github.com/ott-lang/ott)
 
 #### prototype implementation
- - [Adapton-integrated Motoko](https://github.com/Adapton/fumola)
+ - [Fumola](https://github.com/Adapton/fumola)

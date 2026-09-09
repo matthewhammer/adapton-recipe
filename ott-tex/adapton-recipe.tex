@@ -167,7 +167,7 @@ and~\emph{demand}) dependencies.
 
 Behind the scenes, Adapton's recipe provides the \textbf{demanded computation graph} (DCG),
 including the semantics for the graph components'
-memoization and change propagation\footnote{
+memoization and realignment\footnote{
 In a sense, Adapton enriches the existing (CBV or CBN)
 \emph{evaluation strategy} of a PL with an additional dimension of
 evaluation that requires a persistent a graph representation of the
@@ -914,7 +914,7 @@ snapshots of the full store~$[[Store]]$ for each thunk's evaluation,
 and caching and comparing that snapshot.
 %
 Instead of doing that, the graphical semantics is more incremental:
-It can partially dirty and clean a thunk's edges, and in so doing, it also avoids any comparison of the entire graph
+It can signal and repair a thunk's edges one at a time, and in so doing, it also avoids any comparison of the entire graph
 when reusing the cached values of thunks in the graph.
 
 \ottgrammartabular{
@@ -931,8 +931,24 @@ associates with it the source of the action~$[[ppp]]$ (some thunk node
 in the graph) and the target of the action~$[[qq]]$ (some other node
 in the graph).
 %
-The status~$[[b]]$ indicates whether the edge is $[[clean]]$ (aligned
-with current graph) or $[[dirty]]$ (not aligned with current graph).
+The status~$[[b]]$ indicates whether the edge is $[[aligned]]$ (its
+recorded action still agrees with the current graph) or $[[signaled]]$ (a
+change has reached it, and it waits to be checked).
+
+\paragraph{Terms.}
+The Adapton papers (PLDI 2014; Nominal Adapton, OOPSLA 2015) call these two
+states \emph{clean} and \emph{dirty}, the traversal that marks edges
+\emph{dirtying}, the traversal that checks them \emph{cleaning}, and the
+whole \emph{change propagation}.
+%
+This recipe says \emph{aligned} and \emph{signaled}, \emph{signaling},
+\emph{repair}, and \emph{realignment} for the whole: a deliberate change of
+terms, and not of algorithms.
+%
+``Aligned'' is already this recipe's word for a store that agrees with the
+one a thunk last ran under~(\cref{sec:symbolic-space-and-time}); an aligned
+edge is the same relation at the grain of a single observation, which is
+the grain the graph can check.
 
 \ottgrammartabular{
   \ottedge
@@ -955,10 +971,10 @@ from some earlier run on a well-formed graph.
 That earlier run can be very out-dated with respect to the current graph.
 %
 In those cases, an additional aspect of the graph being well-formed
-also insists on the status of an edge be dirty whenever its truly
+also insists on the status of an edge being signaled whenever it is truly
 outdated, or depends on some edge that is, transitively.
 %
-The dirty status can be overly-conservative, but it must hold
+The signaled status can be overly-conservative, but it must hold
 transitively, in every case.
 
 More operationally, each write effect to a graph node also traverses
@@ -969,13 +985,13 @@ A transitively affected node is either a directly affected node
 itself, a node that directly forces a directly affected node, or one
 that transitively forces it.
 
-\subsection{Dirtying.}
+\subsection{Signaling.}
 
-The relations for dirtying use the idea of an ``action pattern'' that
+The relations for signaling use the idea of an ``action pattern'' that
 matches certain actions, and not others:
 
 \ottgrammartabular{
-  \ottDirtyActionPattern
+  \ottSignalPattern
 }
 
 The idea is that when a $\ottkw{put}$ updates a particular pre-existing cell in the graph,
@@ -984,43 +1000,43 @@ each existing action that targets that cell is either aligned or misaligned with
 The $[[misaligned(Space,v)]]$ pattern matches any action that is
 misaligned with (i.e., ``inconsistent with'' or ``disequal to'') a
 $\ottkw{put}$ of that space-value~$([[Space]],[[v]])$; it captures this
-initial part of the dirtying traversal.
+initial part of the signaling traversal.
 
 Then, beyond that first set of affected nodes, each force on any of
 node with a misaligned action/edge, directly or transitively, could be
 affected too.
 %
-The $[[forces]]$ pattern captures this second part of the dirtying
+The $[[forces]]$ pattern captures this second part of the signaling
 traversal.
 
-There are six rules for dirtying: One for dirtying ``target nodes,''
+There are six rules for signaling: One for signaling ``target nodes,''
 and five for processing their incoming edges (dependent edges),
 transitively.
 
 \[
 \begin{array}{lc}
   {\scalebox{1.5}{
-  \boxed{[[Graph1 |- dirty ( DirtyActionPattern , ppp ) !! Graph2]]}}}
+  \boxed{[[Graph1 |- signal ( SignalPattern , ppp ) !! Graph2]]}}}
 &
 \begin{array}{p{4in}}
-  ``Dirtying edges that match pattern~$[[DirtyActionPattern]]$,\\
+  ``Signaling edges that match pattern~$[[SignalPattern]]$,\\
   \hspace{4mm}~that target node~$[[pp]]$ in graph $[[Graph1]]$ yields graph~$[[Graph2]]$.''
 \end{array}
 \end{array}
 \]
 
 \[
-\drule{dirtyNode}
+\drule{signalNode}
 \]
 
 \noindent
-\Rref{dirtyNode} uses another dirtying relation (given just below) to
+\Rref{signalNode} uses another signaling relation (given just below) to
 process each edge in the set of edges that target the node~$[[ppp]]$.
 %
 The same action pattern is compared against the action on each edge.
 %
-In contrast to cleaning, the ordering of dirtying these edges is
-inconsequential to the final output of the dirtying traversal.
+In contrast to repair, the ordering of signaling these edges is
+inconsequential to the final output of the signaling traversal.
 %
 To make the rules determinisitic, we can sort the edge identifiers by
 their happenstance natural numbers.
@@ -1028,68 +1044,68 @@ their happenstance natural numbers.
 \[
 \begin{array}{lc}
   {\scalebox{1.5}{
-  \boxed{[[Graph1 |- dirty ( DirtyActionPattern , t ) !! Graph2]]}}}
+  \boxed{[[Graph1 |- signal ( SignalPattern , t ) !! Graph2]]}}}
 &
 \begin{array}{p{4in}}
-  ``Dirtying incoming edge set~$[[t]]$ in $[[Graph1]]$\\
-  \hspace{4mm}~that match pattern~$[[DirtyActionPattern]]$ yields graph~$[[Graph2]]$.''
+  ``Signaling incoming edge set~$[[t]]$ in $[[Graph1]]$\\
+  \hspace{4mm}~that match pattern~$[[SignalPattern]]$ yields graph~$[[Graph2]]$.''
 \end{array}
 \end{array}
 \]
 
 \begin{mathpar}
-  \drule{DTXXempty}
-  \drule{DTXXbinary}
-  \drule{DTXXalreadyDirty}
-  \drule{DTXXstillClean}
-  \drule{DTXXcleanIntoDirty}
+  \drule{STXXempty}
+  \drule{STXXbinary}
+  \drule{STXXalreadySignaled}
+  \drule{STXXstillAligned}
+  \drule{STXXalignedIntoSignaled}
 \end{mathpar}
 
-There are five rules for dirtying a set of relevant edges, expressed as a sequence~$[[t]]$.
+There are five rules for signaling a set of relevant edges, expressed as a sequence~$[[t]]$.
 %
 Two cases express the monoidal structure of the
-sequence (\rref{DT-empty,DT-binary}), and
-three cases express the possible situations for dirtying each edge/action
-(\rref{DT-alreadyDirty}, \rref{DT-cleanIntoDirty},
-\rref{DT-stillClean}).
+sequence (\rref{ST-empty,DT-binary}), and
+three cases express the possible situations for signaling each edge/action
+(\rref{ST-alreadySignaled}, \rref{ST-alignedIntoSignaled},
+\rref{ST-stillAligned}).
 
-\Rref{DT-alreadyDirty} expresses how the dirtying algorithm ``short
-circuits'' (quits early) when it encounters a dirty edge; it relies on
+\Rref{ST-alreadySignaled} expresses how signaling ``short
+circuits'' (quits early) when it encounters a signaled edge; it relies on
 the graph's well-formedness to justify this behavior.
 %
 The graph being wellformed guarentees that the edges that the traversal
-would encounter if it were to continue are already marked dirty.
+would encounter if it were to continue are already marked signaled.
 
-\rref{DT-stillClean} applies for an edge that is clean, and whose
-action~$[[A]]$ does not match the pattern~$[[DirtyActionPattern]]$;
+\rref{ST-stillAligned} applies for an edge that is aligned, and whose
+action~$[[A]]$ does not match the pattern~$[[SignalPattern]]$;
 for instance, it's common for the put edge that targets (and defines)
-a thunk node to remain clean even as that node is affected by actions
+a thunk node to remain aligned even as that node is affected by actions
 it performs, like accessing cells that change.
 %
 This independence of the $\ottkw{put}$ stems from the definition of the
 thunk being distinct from its behavior under any particular store or
 graph.
 
-\rref{DT-cleanIntoDirty} applies when the action of the edge~$[[A]]$
+\rref{ST-alignedIntoSignaled} applies when the action of the edge~$[[A]]$
 matches the pattern of the traversal at this
-point~$[[DirtyActionPattern]]$.
+point~$[[SignalPattern]]$.
 %
-The rule updates the edge to be~$[[dirty]]$, and it recursively
-dirties any $[[forces]]$ that target the source of the edge, as they
+The rule updates the edge to be~$[[signaled]]$, and it recursively
+signals any $[[forces]]$ that target the source of the edge, as they
 may be affected too.
 %
 This recursive premise helps enforce that the graph remains
-well-formed with respect to transitive $[[dirty]]$ vs $[[clean]]$ edge statuses.
+well-formed with respect to transitive $[[signaled]]$ vs $[[aligned]]$ edge statuses.
 
 
-\subsection{Cleaning.}
+\subsection{Repair.}
 
-There are eight rules for cleaning: Two for cleaning nodes, and six for cleaning their traces.
+There are eight rules for repair: Two for repairing nodes, and six for repairing their traces.
 
 \[
 \begin{array}{lc}
   {\scalebox{1.5}{
-  \boxed{[[Graph1; Path; Moment; m; Space |- clean(pp) !! Graph2]]}}}
+  \boxed{[[Graph1; Path; Moment; m; Space |- repair(pp) !! Graph2]]}}}
 &
 \begin{array}{p{4in}}
   ``
@@ -1097,43 +1113,43 @@ There are eight rules for cleaning: Two for cleaning nodes, and six for cleaning
   path~$[[Path]]$,
   space~$[[Space]]$,\\
   \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
-  \hspace{6mm}~pointer~$[[pp]]$ cleans fully,
+  \hspace{6mm}~pointer~$[[pp]]$ repairs fully,
   resulting in graph~$[[Graph2]]$.
   ''
 \end{array}
 \end{array}
 \]
 
-While cleaning nodes, there are two cases: Nodes that are aligned
+While repairing nodes, there are two cases: Nodes that are aligned
 (\rref{CN-aligned}) and those that are not (\rref{CN-misaligned}):
 
 \begin{mathpar}
-\drule{CNXXaligned}
-\drule{CNXXmisaligned}
+\drule{RNXXaligned}
+\drule{RNXXmisaligned}
 \end{mathpar}
 
-Algorithmically, the ``alignment'' of the node is a function of its trace, and is indicated by the final status of cleaning that trace under the current graph.
+Algorithmically, the ``alignment'' of the node is a function of its trace, and is indicated by the final status of repairing that trace under the current graph.
 %
-When $[[clean]]$, we say that the node is still \emph{aligned with the graph}.
-Otherwise, when $[[dirty]]$, we say that the node is \emph{misaligned} with the current graph.
+When $[[aligned]]$, we say that the node is still \emph{aligned with the graph}.
+Otherwise, when $[[signaled]]$, we say that the node is \emph{misaligned} with the current graph.
 %
-To remedy the latter situation, the cleaning algorithm replaces misaligned traces with updates ones,
+To remedy the latter situation, repair replaces misaligned traces with updated ones,
 based on re-evaluating the node under the current graph (see \rref{CN-misaligned}).
 %
 
 \Rref{CN-misaligned} captures the case of a misaligned node, where at least one
-local edge is not cleanable because it witnesses an action with an
+local edge cannot be realigned because it witnesses an action with an
 outdated value.
 %
-The judgement~$[[Graph1; Path; Moment; m; Space |- clean(t) !!
-    Graph2; dirty]]$ captures this situation for a trace~$[[t]]$ that contains this edge.
+The judgement~$[[Graph1; Path; Moment; m; Space |- repair(t) !!
+    Graph2; signaled]]$ captures this situation for a trace~$[[t]]$ that contains this edge.
 %
 We call this trace and its edge ``misaligned'' because they cannot be ``aligned with''
 (reconciled with) the current graph.
 %
 In these situations, the graph node is generally misaligned with the graph as well, with an outdated value.
 
-To clean the node, the rule replaces the old trace with an updated one
+To repair the node, the rule replaces the old trace with an updated one
 from an updated evaluation.
 %
 This new evaluation occurs with an advanced meta moment, and the rule
@@ -1144,13 +1160,13 @@ Each distinct meta moment in the graph corresponds to the use of this
 rule, the only rule that advances it.
 
 
-The following relation specifies how to clean a node's trace~$[[t]]$, either fully or partially,
-thereby determining which node cleaning rule applies.
+The following relation specifies how to repair a node's trace~$[[t]]$, either fully or partially,
+thereby determining which node repair rule applies.
 
 \[
 \begin{array}{lc}
   {\scalebox{1.5}{
-  \boxed{[[Graph1; Path; Moment; m; Space |- clean(t) !! Graph2; b]]}}}
+  \boxed{[[Graph1; Path; Moment; m; Space |- repair(t) !! Graph2; b]]}}}
 &
 \begin{array}{p{4in}}
   ``
@@ -1158,7 +1174,7 @@ thereby determining which node cleaning rule applies.
   path~$[[Path]]$,
   space~$[[Space]]$,\\
   \hspace{3mm}~moment~$[[Moment]]$ and meta-moment~$[[m]]$,\\
-  \hspace{6mm}~cleaning trace~$[[t]]$
+  \hspace{6mm}~repairing trace~$[[t]]$
   results in status~$[[b]]$ and graph~$[[Graph2]]$.
   ''
 \end{array}
@@ -1166,31 +1182,31 @@ thereby determining which node cleaning rule applies.
 \]
 
 \begin{mathpar}
-\drule{CTXXempty}
-\drule{CTXXbinL}
-\drule{CTXXbinR}
-\drule{CTXXalreadyClean}
-\drule{CTXXdirtyIntoClean}
-\drule{CTXXmisaligned}
+\drule{RTXXempty}
+\drule{RTXXbinL}
+\drule{RTXXbinR}
+\drule{RTXXalreadyAligned}
+\drule{RTXXsignaledIntoAligned}
+\drule{RTXXmisaligned}
 \end{mathpar}
 
-There are six rules for cleaning a trace.
+There are six rules for repairing a trace.
 %
 Three cases express the monoidal structure of the
-trace (\rref{CT-empty}, \rref{CT-binL}, \rref{CT-binR}), and
+trace (\rref{RT-empty}, \rref{RT-binL}, \rref{RT-binR}), and
 three cases express the possible situations for each edge/action
-(\rref{CT-alreadyClean}, \rref{CT-dirtyIntoClean},
-\rref{CT-misaligned}).
+(\rref{RT-alreadyAligned}, \rref{RT-signaledIntoAligned},
+\rref{RT-misaligned}).
 
 The three edge rules determine if a node is aligned or misaligned.
 %
 Each aligned edge uses one of the
-two \rref{CT-alreadyClean,CT-dirtyIntoClean}.
+two \rref{RT-alreadyAligned,CT-signaledIntoAligned}.
 
-\Rref{CT-misaligned} applies for a misaligned edge, where the action
+\Rref{RT-misaligned} applies for a misaligned edge, where the action
 is no longer aligned with the graph.
 %
-To procede with cleaning the source node~$[[ppp]]$, this misaligned edge~$[[n]]$ must be
+To proceed with repairing the source node~$[[ppp]]$, this misaligned edge~$[[n]]$ must be
 replaced by a use of \rref{CN-misaligned}, which will replace each
 immediate action of~$[[pp]]$ with an updated (aligned) action/edge.
 
@@ -1216,7 +1232,7 @@ immediate action of~$[[pp]]$ with an updated (aligned) action/edge.
 
 \subsection{Putting values into the store.}
 
-(Compared to reference dynamics, very similar, but uses dirtying for put and stores edges.)
+(Compared to reference dynamics, very similar, but uses signaling for put and stores edges.)
 
 \subsection{Getting values from the store.}
 
@@ -1232,15 +1248,15 @@ Both are similar to their reference semantics counterparts; we focus on the diff
 by evaluating the thunk (under the appropriate path and space) and
 storing the resulting trace and value in the cache.
 
-\Rref{IE-cleanForce} handles the case where the thunk cache is filled
-by first cleaning the thunk node, and then accessing the aligned (up
+\Rref{IE-repairForce} handles the case where the thunk cache is filled
+by first repairing the thunk node, and then accessing the aligned (up
 to date) resul value from the cache.
 
 Compared to the reference semantics, the is only one rule for a filled
-cache, and this rule always applies, and cleaning always succeeds
+cache, and this rule always applies, and repair always succeeds
 (somehow) in updating the cache to be aligned with the current graph.
 %
-Sometimes, cleaning will effectively ``redo'' the thunk if needed, but
+Sometimes, repair will effectively ``redo'' the thunk if needed, but
 not in every case where the reference semantics falls back to a
 ``redo''.
 
@@ -1248,14 +1264,14 @@ not in every case where the reference semantics falls back to a
 
 \begin{mathpar}
 \drule{IEXXemptyForce}
-\drule{IEXXcleanForce}
+\drule{IEXXrepairForce}
 %\drule{EXXreuseForce}
 %\drule{EXXredoForce}
 \end{mathpar}
 
 \subsection{Undelay.}
 
-(Compared to reference dynamics, very similar, but uses dirtying.)
+(Compared to reference dynamics, very similar, but uses signaling.)
 
 % =============================================================================================================================
 % =============================================================================================================================
@@ -1414,7 +1430,7 @@ determining the max element, the min element, the median element, or
 even sorting it upon demand into a new, output sequence.
 
 By using harmonious structures for sequences in our programs, the Adapton Recipe will provide an efficient
-incremental change propagation algorithm, behind the scenes.
+realignment algorithm, behind the scenes.
 %
 In the remainder of this section, we work towards that final example
 (demand-driven sorted output sequence), building the needed program components
@@ -1668,9 +1684,10 @@ uniform in their calling conventions.
 
 The initial semantics for Adapton (PLDI 2014) defined demanded
 computation graphs (DCGs).  It maintained these graphs' consistency
-status via dirtying and cleaning algorithms.  These algorithms
-transition graph components between two possible states: potentially
-inconsistent (``dirty'') and definitely consistent (``clean'').
+status via signaling and repair algorithms -- dirtying and cleaning, in
+that paper's words.  These algorithms transition graph components between
+two possible states: potentially inconsistent (``signaled'') and
+definitely consistent (``aligned'').
 
 Initially, the Adapton recipe focused on a simple cache model: A mutable
 input store, created and changed by the ambient editor, and a cached DCG

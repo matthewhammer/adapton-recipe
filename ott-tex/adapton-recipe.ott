@@ -237,13 +237,13 @@ A :: 'A_' ::= {{ com Actions (and relevant values). }}
  | get ( v ) :: :: get {{ com Get value~$[[v]]$. }}
  | force ( v ) :: :: force {{ com Force edge target, resulting in~$[[v]]$. }}
 
-DirtyActionPattern {{ tex \hat{A} }} :: 'Apat_' ::= {{ com Action patterns, for dirtying traversal. }}
+SignalPattern {{ tex \hat{A} }} :: 'Apat_' ::= {{ com Action patterns, for the signaling traversal. }}
  | misaligned ( Space , v ) :: :: misaligned {{ com Matches all actions misaligned with putting $([[Space]], [[v]])$. }}
  | forces :: :: forcing {{ com Matches all $\ottkw{force}$ actions, and no $\ottkw{put}$ nor $\ottkw{get}$ actions. }}
 
-b :: 'b_' ::= {{ com Status bit. }}
- | clean :: :: clean {{ com Clean. }}
- | dirty :: :: dirty {{ com Dirty. }}
+b :: 'b_' ::= {{ com Status bit: aligned with the graph, or signaled that it may not be. }}
+ | aligned :: :: aligned {{ com Aligned. }}
+ | signaled :: :: signaled {{ com Signaled. }}
 
 defns Ref :: '' ::=
 
@@ -446,120 +446,120 @@ by
 (ppp = ((Space2, Moment)^st, m) ~~ Graph2(ppp) = Thunk(Space0, e0, empty)) \\\\
 Graph1; Path; Moment; m; Space1 |- e !! Graph2; t; ptr Space2 \\\\
 Graph2; Path, (Space2, Moment)^st; Moment; m; Space0 |- e0 !! Graph3; t3; v3 \\\\
-addEdge(Graph3{ ppp |-> Thunk(Space0, e0, (t3, v3)) }, top(Path)--force(v3)--clean--> (Space2, Moment)^st) = (Graph4, n)
+addEdge(Graph3{ ppp |-> Thunk(Space0, e0, (t3, v3)) }, top(Path)--force(v3)--aligned--> (Space2, Moment)^st) = (Graph4, n)
 ------------------------------------------------------------------------------------------------------------- :: emptyForce
-Graph1; Path; Moment; m; Space1 |- force((e)) !! Graph4; t, n; v
+Graph1; Path; Moment; m; Space1 |- force((e)) !! Graph4; t, n; v3
 
 (ppp = ((Space2, Moment)^st, m) ~~ Graph2(ppp) = Thunk(Space0, e0, (t0, v0))) \\\\
 Graph1; Path; Moment; m; Space1 |- e !! Graph2; t; ptr Space2 \\\\
-Graph2; Path; Moment; m; Space0 |- clean((Space2, Moment)^st) !! Graph3 \\\\
+Graph2; Path; Moment; m; Space0 |- repair((Space2, Moment)^st) !! Graph3 \\\\
 Graph3((Space2, Moment)^st) = Thunk(Space0, e0, (t3, v3)) \\\\
-addEdge(Graph3, top(Path)--force(v3)--clean--> (Space2, Moment)^st) = (Graph4, n)
---------------------------------------------------------------------------------- :: cleanForce
-Graph1; Path; Moment; m; Space1 |- force((e)) !! Graph4; t, n; v
+addEdge(Graph3, top(Path)--force(v3)--aligned--> (Space2, Moment)^st) = (Graph4, n)
+--------------------------------------------------------------------------------- :: repairForce
+Graph1; Path; Moment; m; Space1 |- force((e)) !! Graph4; t, n; v3
 
 
 defn
-Graph1 ; Path ; Moment ; m ; Space |- clean ( pp ) !! Graph2
-:: :: cleanNode :: 'CN_'
-{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[pp]]) \Downarrow [[Graph2]] }}
+Graph1 ; Path ; Moment ; m ; Space |- repair ( pp ) !! Graph2
+:: :: repairNode :: 'RN_'
+{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{repair}([[pp]]) \Downarrow [[Graph2]] }}
 by
 
 Graph1(pp) = Thunk(Space, e0, (t0, v0))
-Graph1 ; Path ; Moment ; m ; Space |- clean ( t0 ) !! Graph2 ; clean
+Graph1 ; Path ; Moment ; m ; Space |- repair ( t0 ) !! Graph2 ; aligned
 ----------------------------------------------------------------------- :: aligned
-Graph1 ; Path ; Moment ; m ; Space |- clean ( pp ) !! Graph2
+Graph1 ; Path ; Moment ; m ; Space |- repair ( pp ) !! Graph2
 
 
-( Graph1 ; Path ; Moment ; m1 ; Space |- clean( t0 ) !! Graph2 ; dirty ~~~~ Graph2{ (pp, m2) |-> Thunk(Space, e0, empty) } ; Path, pp; Moment ; m2 ; Space0 |- e0 !! Graph3; t3; v3 )
+( Graph1 ; Path ; Moment ; m1 ; Space |- repair( t0 ) !! Graph2 ; signaled ~~~~ Graph2{ (pp, m2) |-> Thunk(Space0, e0, empty) } ; Path, pp; Moment ; m2 ; Space0 |- e0 !! Graph3; t3; v3 )
 ( Graph1(pp) = Thunk(Space0, e0, (t0, v0)) ~~~~ nextMetaMoment(Graph2) = m2 )
 ---------------------------------------------------------------------------------------------------- :: misaligned
-Graph1 ; Path ; Moment ; m1 ; Space |- clean ( pp ) !! Graph3{ (pp, m2) |-> Thunk(Space0, e0, (t3, v3)) }
+Graph1 ; Path ; Moment ; m1 ; Space |- repair ( pp ) !! Graph3{ (pp, m2) |-> Thunk(Space0, e0, (t3, v3)) }
 
 defn
-Graph1 ; Path ; Moment ; m ; Space |- clean ( t ) !! Graph2 ; b
-:: :: revisedCleanTrace :: 'CT_'
-{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{clean}([[t]]) \Downarrow [[Graph2]] ; [[b]] }}
+Graph1 ; Path ; Moment ; m ; Space |- repair ( t ) !! Graph2 ; b
+:: :: repairTrace :: 'RT_'
+{{ tex [[Graph1]] ; [[Path]] \vdash^{[[Space]]}_{[[Moment]], [[m]]} \ottkw{repair}([[t]]) \Downarrow [[Graph2]] ; [[b]] }}
 by
 
 ----------------------------------------------------------------------- :: empty
-Graph ; Path ; Moment ; m ; Space |- clean ( empty ) !! Graph ; clean
+Graph ; Path ; Moment ; m ; Space |- repair ( empty ) !! Graph ; aligned
 
-Graph2 ; Path ; Moment ; m ; Space |- clean ( t1 ) !! Graph2 ; dirty
+Graph1 ; Path ; Moment ; m ; Space |- repair ( t1 ) !! Graph2 ; signaled
 ------------------------------------------------------------------------------ :: binL
-Graph1 ; Path ; Moment ; m ; Space |- clean ( t1, t2 ) !! Graph2 ; dirty
+Graph1 ; Path ; Moment ; m ; Space |- repair ( t1, t2 ) !! Graph2 ; signaled
 
-Graph1 ; Path ; Moment ; m ; Space |- clean ( t1 ) !! Graph2 ; clean
-Graph2 ; Path ; Moment ; m ; Space |- clean ( t2 ) !! Graph3 ; b
+Graph1 ; Path ; Moment ; m ; Space |- repair ( t1 ) !! Graph2 ; aligned
+Graph2 ; Path ; Moment ; m ; Space |- repair ( t2 ) !! Graph3 ; b
 ------------------------------------------------------------------------- :: binR
-Graph1 ; Path ; Moment ; m ; Space |- clean ( t1, t2 ) !! Graph3 ; b
+Graph1 ; Path ; Moment ; m ; Space |- repair ( t1, t2 ) !! Graph3 ; b
 
-Graph(n) = ppp -- A -- clean --> qq
---------------------------------------------------------------- :: alreadyClean
-Graph ; Path ; Moment ; m ; Space |- clean(n) !! Graph ; clean
+Graph(n) = ppp -- A -- aligned --> qq
+--------------------------------------------------------------- :: alreadyAligned
+Graph ; Path ; Moment ; m ; Space |- repair(n) !! Graph ; aligned
 
-(Graph1(n) = ppp -- A -- dirty --> qq ~~~~ Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2)
+(Graph1(n) = ppp -- A -- signaled --> qq ~~~~ Graph1 ; Path, qq ; Moment ; m ; Space |- repair(qq) !! Graph2)
 ( ~~~~ value(A) = value(Graph2, qq))
------------------------------------------------------------------------------------------------------ :: dirtyIntoClean
-Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph2{ n |-> ppp --A--clean--> qq } ; clean
+----------------------------------------------------------------------------------------------------- :: signaledIntoAligned
+Graph1 ; Path ; Moment ; m ; Space |- repair(n) !! Graph2{ n |-> ppp --A--aligned--> qq } ; aligned
 
-Graph1(n) = ppp -- A -- dirty --> qq
-Graph1 ; Path, qq ; Moment ; m ; Space |- clean(qq) !! Graph2
+Graph1(n) = ppp -- A -- signaled --> qq
+Graph1 ; Path, qq ; Moment ; m ; Space |- repair(qq) !! Graph2
 value(A) /= value(Graph2, qq)
 ------------------------------------------------------------------- :: misaligned
-Graph1 ; Path ; Moment ; m ; Space |- clean(n) !! Graph2 ; dirty
+Graph1 ; Path ; Moment ; m ; Space |- repair(n) !! Graph2 ; signaled
 
 
 defn
-DirtyActionPattern ~~ A
+SignalPattern ~~ A
 :: :: actionMatches :: 'AM_'
 by
 
 defn
-DirtyActionPattern ~/~ A
+SignalPattern ~/~ A
 :: :: actionDoesNotMatch :: 'ANM_'
 by
 
 
 defn
-Graph1 |- dirty ( DirtyActionPattern , ppp ) !! Graph2
-:: :: dirtyNode :: ''
+Graph1 |- signal ( SignalPattern , ppp ) !! Graph2
+:: :: signalNode :: ''
 by
 
-Graph1 |- dirty ( DirtyActionPattern , incomingEdges(Graph1, ppp) ) !! Graph2
------------------------------------------------------------------------------- :: dirtyNode
-Graph1 |- dirty ( DirtyActionPattern , ppp ) !! Graph2
+Graph1 |- signal ( SignalPattern , incomingEdges(Graph1, ppp) ) !! Graph2
+------------------------------------------------------------------------------ :: signalNode
+Graph1 |- signal ( SignalPattern , ppp ) !! Graph2
 
 defn
-Graph1 |- dirty ( DirtyActionPattern , t ) !! Graph2
-:: :: dirtyTrace :: 'DT_'
+Graph1 |- signal ( SignalPattern , t ) !! Graph2
+:: :: signalTrace :: 'ST_'
 by
 
 -------------------------------------------------- :: empty
-Graph |- dirty(DirtyActionPattern, empty) !! Graph
+Graph |- signal(SignalPattern, empty) !! Graph
 
-Graph1 |- dirty(DirtyActionPattern, t1) !! Graph2
-Graph2 |- dirty(DirtyActionPattern, t2) !! Graph3
+Graph1 |- signal(SignalPattern, t1) !! Graph2
+Graph2 |- signal(SignalPattern, t2) !! Graph3
 ------------------------------------------------------ :: binary
-Graph1 |- dirty(DirtyActionPattern, t1,t2) !! Graph3
+Graph1 |- signal(SignalPattern, t1,t2) !! Graph3
 
 
-Graph(n) = ppp --A--dirty--> qq
------------------------------------------------- :: alreadyDirty
-Graph |- dirty(DirtyActionPattern, n) !! Graph
+Graph(n) = ppp --A--signaled--> qq
+------------------------------------------------ :: alreadySignaled
+Graph |- signal(SignalPattern, n) !! Graph
 
 
-Graph1(n) = ppp --A--clean--> qq
-DirtyActionPattern ~~ A
-Graph2 = Graph1{ n |-> ppp --A--dirty--> qq }
-Graph2 |- dirty(forces, ppp) !! Graph3
-------------------------------------------------- :: cleanIntoDirty
-Graph1 |- dirty(DirtyActionPattern, n) !! Graph3
+Graph1(n) = ppp --A--aligned--> qq
+SignalPattern ~~ A
+Graph2 = Graph1{ n |-> ppp --A--signaled--> qq }
+Graph2 |- signal(forces, ppp) !! Graph3
+------------------------------------------------- :: alignedIntoSignaled
+Graph1 |- signal(SignalPattern, n) !! Graph3
 
-Graph(n) = ppp --A--clean--> qq
-DirtyActionPattern ~/~ A
-------------------------------------------------- :: stillClean
-Graph |- dirty(DirtyActionPattern, n) !! Graph
+Graph(n) = ppp --A--aligned--> qq
+SignalPattern ~/~ A
+------------------------------------------------- :: stillAligned
+Graph |- signal(SignalPattern, n) !! Graph
 
 defn
 Graph1 <= Graph2
